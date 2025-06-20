@@ -45,6 +45,11 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
     
+    - name: 🔍 Run Diagnostic
+      run: |
+        echo "🔍 Exécution du diagnostic système..."
+        python scripts/diagnostic.py
+    
     - name: 🔍 Check Recent Articles
       id: check_articles
       run: |
