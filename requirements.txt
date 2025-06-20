@@ -2,6 +2,9 @@
 # IA et génération de contenu
 openai>=1.0.0
 
+# Templates et rendu HTML
+jinja2>=3.1.0
+
 # Traitement d'images
 Pillow>=10.0.0
 requests>=2.31.0
@@ -15,4 +18,7 @@ chardet>=5.2.0
 
 # Utilitaires
 python-dateutil>=2.8.0
-pathlib2>=2.3.0 
+pathlib2>=2.3.0
+
+# Parsing et validation
+urllib3>=2.0.0 

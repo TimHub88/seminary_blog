@@ -41,7 +41,8 @@ def check_environment():
         ('beautifulsoup4', 'BeautifulSoup'),
         ('chardet', 'Chardet'),
         ('Pillow', 'PIL'),
-        ('lxml', 'LXML')
+        ('lxml', 'LXML'),
+        ('jinja2', 'Jinja2')
     ]
     
     for package, display_name in dependencies:
