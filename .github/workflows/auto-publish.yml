@@ -1,0 +1,324 @@
+name: Seminary Blog Auto-Publisher
+
+on:
+  schedule:
+    # Exécution tous les 2 jours à 8h00 UTC (9h00 Paris été, 10h00 Paris hiver)
+    - cron: '0 8 */2 * *'
+  
+  # Permettre l'exécution manuelle
+  workflow_dispatch:
+    inputs:
+      force_generation:
+        description: 'Forcer la génération même si récent article existe'
+        required: false
+        default: 'false'
+        type: boolean
+      
+      debug_mode:
+        description: 'Mode debug avec logs détaillés'
+        required: false
+        default: 'false'
+        type: boolean
+
+env:
+  CHUTES_API_KEY: ${{ secrets.CHUTES_API_KEY }}
+  UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}
+
+jobs:
+  generate-and-publish:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 🔄 Checkout Repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Récupérer tout l'historique pour Git
+    
+    - name: 🐍 Setup Python 3.11
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        cache: 'pip'
+    
+    - name: 📦 Install Dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+    
+    - name: 🔍 Check Recent Articles
+      id: check_articles
+      run: |
+        # Vérifier s'il y a eu un article dans les dernières 40 heures
+        # (buffer de 8h par rapport au cycle de 48h)
+        CUTOFF_DATE=$(date -d '40 hours ago' '+%Y-%m-%d')
+        RECENT_ARTICLES=$(find articles/ -name "*.html" -newer <(date -d "$CUTOFF_DATE" '+%Y%m%d%H%M.%S') 2>/dev/null | wc -l)
+        
+        echo "recent_articles=$RECENT_ARTICLES" >> $GITHUB_OUTPUT
+        echo "cutoff_date=$CUTOFF_DATE" >> $GITHUB_OUTPUT
+        
+        if [ "$RECENT_ARTICLES" -gt 0 ] && [ "${{ github.event.inputs.force_generation }}" != "true" ]; then
+          echo "skip_generation=true" >> $GITHUB_OUTPUT
+          echo "ℹ️ Article récent trouvé ($RECENT_ARTICLES), génération ignorée"
+        else
+          echo "skip_generation=false" >> $GITHUB_OUTPUT
+          echo "✅ Génération autorisée"
+        fi
+    
+    - name: 🔧 Setup Environment
+      if: steps.check_articles.outputs.skip_generation == 'false'
+      run: |
+        # Créer les répertoires nécessaires
+        mkdir -p articles data/image_cache images
+        
+        # Vérifier les clés API
+        if [ -z "$CHUTES_API_KEY" ]; then
+          echo "❌ CHUTES_API_KEY manquante"
+          exit 1
+        fi
+        
+        echo "✅ Environment configuré"
+    
+    - name: 📝 Update Article Context
+      if: steps.check_articles.outputs.skip_generation == 'false'
+      run: |
+        echo "🔄 Mise à jour du contexte des articles..."
+        python scripts/context_manager.py \
+          --api-key "$CHUTES_API_KEY" \
+          --show-context
+    
+    - name: 🤖 Generate New Article
+      if: steps.check_articles.outputs.skip_generation == 'false'
+      id: generate_article
+      run: |
+        echo "🚀 Génération d'un nouvel article..."
+        
+        # Configurer les options selon le mode debug
+        if [ "${{ github.event.inputs.debug_mode }}" == "true" ]; then
+          export LOG_LEVEL=DEBUG
+        fi
+        
+        # Générer l'article avec gestion d'erreur
+        if python scripts/article_generator.py \
+           --chutes-api-key "$CHUTES_API_KEY" \
+           --unsplash-api-key "$UNSPLASH_ACCESS_KEY" > generation.log 2>&1; then
+          
+          # Récupérer le nom du fichier généré
+          GENERATED_FILE=$(grep "Article sauvegardé:" generation.log | tail -1 | sed 's/.*: //')
+          echo "generated_file=$GENERATED_FILE" >> $GITHUB_OUTPUT
+          echo "generation_success=true" >> $GITHUB_OUTPUT
+          echo "✅ Article généré: $GENERATED_FILE"
+          
+        else
+          echo "generation_success=false" >> $GITHUB_OUTPUT
+          echo "❌ Échec de génération"
+          cat generation.log
+          exit 1
+        fi
+    
+    - name: 🔍 Validate Generated Article
+      if: steps.check_articles.outputs.skip_generation == 'false' && steps.generate_article.outputs.generation_success == 'true'
+      run: |
+        GENERATED_FILE="${{ steps.generate_article.outputs.generated_file }}"
+        
+        if [ -f "$GENERATED_FILE" ]; then
+          echo "✅ Fichier confirmé: $GENERATED_FILE"
+          
+          # Validation SEO rapide
+          python scripts/seo_validator.py "$GENERATED_FILE" --detailed > seo_report.txt
+          
+          # Afficher le rapport SEO
+          echo "📊 Rapport SEO:"
+          head -10 seo_report.txt
+          
+          # Vérifier la taille du fichier
+          FILE_SIZE=$(stat -c%s "$GENERATED_FILE")
+          if [ "$FILE_SIZE" -lt 5000 ]; then
+            echo "⚠️ Fichier suspicieusement petit ($FILE_SIZE bytes)"
+          fi
+          
+        else
+          echo "❌ Fichier généré introuvable: $GENERATED_FILE"
+          exit 1
+        fi
+    
+    - name: 🔧 Update Index Page
+      if: steps.check_articles.outputs.skip_generation == 'false' && steps.generate_article.outputs.generation_success == 'true'
+      run: |
+        echo "🔄 Mise à jour de la page d'accueil..."
+        
+        # Script Python pour régénérer index.html
+        python -c "
+import os
+import re
+from datetime import datetime
+from pathlib import Path
+
+# Lister tous les articles
+articles_dir = Path('articles')
+articles = []
+
+for html_file in articles_dir.glob('*.html'):
+    match = re.match(r'^(\d{4}-\d{2}-\d{2})-(.+)\.html$', html_file.name)
+    if match:
+        date_str, title_slug = match.groups()
+        date_obj = datetime.strptime(date_str, '%Y-%m-%d')
+        
+        # Lire le titre du fichier
+        try:
+            with open(html_file, 'r', encoding='utf-8') as f:
+                content = f.read()
+            title_match = re.search(r'<h1[^>]*>(.*?)</h1>', content, re.IGNORECASE)
+            title = title_match.group(1) if title_match else title_slug.replace('-', ' ').title()
+            
+            # Extraire description
+            desc_match = re.search(r'<meta name=\"description\" content=\"(.*?)\"', content)
+            description = desc_match.group(1) if desc_match else 'Article sur les séminaires dans les Vosges'
+            
+            articles.append({
+                'filename': html_file.name,
+                'date': date_obj,
+                'date_str': date_str,
+                'title': title,
+                'description': description
+            })
+        except Exception as e:
+            print(f'Erreur lecture {html_file}: {e}')
+
+# Trier par date décroissante
+articles.sort(key=lambda x: x['date'], reverse=True)
+
+# Générer index.html
+index_html = '''<!DOCTYPE html>
+<html lang=\"fr\">
+<head>
+    <meta charset=\"UTF-8\">
+    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">
+    <title>Seminary Blog - Séminaires d'entreprise dans les Vosges</title>
+    <meta name=\"description\" content=\"Blog dédié aux séminaires d'entreprise dans les Vosges. Découvrez nos conseils et actualités.\">
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        h1 { color: #7E22CE; }
+        .article { border: 1px solid #ddd; margin: 20px 0; padding: 20px; border-radius: 8px; }
+        .date { color: #666; font-size: 0.9em; }
+        .badge { background: #7E22CE; color: white; padding: 4px 8px; border-radius: 4px; font-size: 0.8em; }
+    </style>
+</head>
+<body>
+    <h1>Seminary Blog <span class=\"badge\">Vosges</span></h1>
+    <p>Découvrez nos derniers articles sur les séminaires d'entreprise dans les magnifique région des Vosges.</p>
+    
+    <div class=\"articles\">'''
+
+for article in articles[:10]:  # Derniers 10 articles
+    index_html += f'''
+        <div class=\"article\">
+            <h2><a href=\"articles/{article['filename']}\">{article['title']}</a></h2>
+            <p class=\"date\">📅 {article['date_str']}</p>
+            <p>{article['description']}</p>
+        </div>'''
+
+index_html += '''
+    </div>
+    
+    <footer style=\"margin-top: 40px; padding: 20px; background: #f5f5f5; text-align: center;\">
+        <p>© 2024 <a href=\"https://goseminary.com\">Seminary</a> - Organisateur de séminaires dans les Vosges</p>
+        <p><a href=\"https://goseminary.com/statistics\">Statistiques</a> | 
+           <a href=\"https://goseminary.com/reservations\">Réservations</a> | 
+           <a href=\"https://goseminary.com/providers\">Prestataires</a></p>
+    </footer>
+</body>
+</html>'''
+
+# Sauvegarder
+with open('index.html', 'w', encoding='utf-8') as f:
+    f.write(index_html)
+
+print('✅ Index.html mis à jour')
+"
+    
+    - name: 📊 Generate Statistics
+      if: steps.check_articles.outputs.skip_generation == 'false' && steps.generate_article.outputs.generation_success == 'true'
+      run: |
+        echo "📊 Génération des statistiques..."
+        
+        TOTAL_ARTICLES=$(find articles/ -name "*.html" | wc -l)
+        TOTAL_WORDS=$(find articles/ -name "*.html" -exec cat {} \; | wc -w)
+        LAST_ARTICLE="${{ steps.generate_article.outputs.generated_file }}"
+        
+        echo "📈 Statistiques du blog:"
+        echo "  • Articles total: $TOTAL_ARTICLES"
+        echo "  • Mots total: ~$TOTAL_WORDS"
+        echo "  • Dernier article: $LAST_ARTICLE"
+        echo "  • Généré le: $(date '+%Y-%m-%d %H:%M:%S UTC')"
+    
+    - name: 🧹 Cleanup Old Files
+      if: steps.check_articles.outputs.skip_generation == 'false'
+      run: |
+        echo "🧹 Nettoyage des anciens fichiers..."
+        
+        # Nettoyer les anciennes images (30+ jours)
+        if [ -d "images" ]; then
+          find images/ -name "*.jpg" -mtime +30 -delete 2>/dev/null || true
+          CLEANED_IMAGES=$(find images/ -name "*.jpg" -mtime +30 | wc -l)
+          echo "🗑️ Images nettoyées: $CLEANED_IMAGES"
+        fi
+        
+        # Nettoyer les logs temporaires
+        rm -f generation.log seo_report.txt 2>/dev/null || true
+    
+    - name: 🔄 Commit and Push Changes
+      if: steps.check_articles.outputs.skip_generation == 'false' && steps.generate_article.outputs.generation_success == 'true'
+      run: |
+        # Configuration Git
+        git config --global user.name 'Seminary Blog Bot'
+        git config --global user.email 'blog-bot@goseminary.com'
+        
+        # Ajouter les fichiers modifiés
+        git add articles/ images/ data/ index.html
+        
+        # Vérifier s'il y a des changements
+        if git diff --staged --quiet; then
+          echo "ℹ️ Aucun changement à commiter"
+        else
+          # Commit avec message informatif
+          GENERATED_FILE="${{ steps.generate_article.outputs.generated_file }}"
+          COMMIT_MSG="🤖 Auto-publish: $(basename "$GENERATED_FILE" .html)"
+          
+          git commit -m "$COMMIT_MSG"
+          git push origin main
+          
+          echo "✅ Changements commitées et pushées"
+          echo "📄 Fichier: $GENERATED_FILE"
+        fi
+    
+    - name: 📢 Notify Success
+      if: steps.check_articles.outputs.skip_generation == 'false' && steps.generate_article.outputs.generation_success == 'true'
+      run: |
+        echo "🎉 SUCCÈS: Nouvel article publié!"
+        echo "📄 Fichier: ${{ steps.generate_article.outputs.generated_file }}"
+        echo "🌐 Disponible sur: https://blog.goseminary.com"
+        echo "🕒 Prochaine exécution prévue dans 48h"
+    
+    - name: 📢 Notify Skip
+      if: steps.check_articles.outputs.skip_generation == 'true'
+      run: |
+        echo "ℹ️ Génération ignorée: article récent détecté"
+        echo "📅 Articles récents: ${{ steps.check_articles.outputs.recent_articles }}"
+        echo "⏭️ Prochaine vérification dans 48h"
+    
+    - name: 🚨 Handle Failure
+      if: failure()
+      run: |
+        echo "❌ ÉCHEC DU WORKFLOW"
+        echo "🕒 Prochaine tentative dans 48h"
+        
+        # Afficher les logs en cas d'erreur
+        if [ -f "generation.log" ]; then
+          echo "📋 Logs de génération:"
+          cat generation.log
+        fi
+        
+        # Créer un rapport d'erreur simple
+        echo "Erreur détectée le $(date)" > error_report.txt
+        echo "Workflow: ${{ github.workflow }}" >> error_report.txt
+        echo "Run ID: ${{ github.run_id }}" >> error_report.txt 
