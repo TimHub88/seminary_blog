@@ -1,0 +1,171 @@
+<!-- Fichier: seminary/presentation/templates/footer.html -->
+<!-- Footer autonome de Seminary avec styles inline -->
+
+<style>
+    /* Variables CSS nécessaires pour le footer */
+    :root {
+        --white: #FFFFFF;
+        --transition-fast: 0.2s ease;
+        --transition-slow: 0.5s ease;
+    }
+
+    /* Styles pour le footer */
+    .site-footer {
+        background: linear-gradient(to bottom, #8C1DCB, #7A1AAD);
+        color: var(--white);
+        padding: 4rem 0 2rem 0;
+        margin-top: auto;
+        font-size: 0.95rem;
+        position: relative;
+        z-index: 1;
+    }
+
+    .footer-col {
+        margin-bottom: 2rem;
+    }
+
+    .footer-logo {
+        width: 50px;
+        height: auto;
+        margin-bottom: 1rem;
+        border-radius: 50%;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .footer-description {
+        margin-bottom: 1.5rem;
+        line-height: 1.6;
+        color: rgba(255, 255, 255, 0.85);
+    }
+
+    .social-icons a {
+        color: var(--white);
+        font-size: 1.2rem;
+        margin-right: 1rem;
+        transition: opacity var(--transition-fast);
+        display: inline-block;
+    }
+
+    .social-icons a:hover {
+        opacity: 0.8;
+    }
+
+    .footer-col h5 {
+        font-weight: 600;
+        margin-bottom: 1.2rem;
+        color: var(--white);
+        position: relative;
+        padding-bottom: 0.5rem;
+    }
+
+    .footer-col h5::after {
+        content: '';
+        position: absolute;
+        left: 0;
+        bottom: 0;
+        width: 30px;
+        height: 2px;
+        background-color: var(--white);
+    }
+
+    .footer-links {
+        list-style: none;
+        padding: 0;
+    }
+
+    .footer-links li {
+        margin-bottom: 0.75rem;
+    }
+
+    .footer-links a {
+        color: rgba(255, 255, 255, 0.85);
+        text-decoration: none;
+        transition: color var(--transition-fast);
+        position: relative;
+    }
+
+    .footer-links a::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        bottom: -2px;
+        width: 0;
+        height: 1px;
+        background-color: var(--white);
+        transition: width var(--transition-slow);
+    }
+
+    .footer-links a:hover {
+        color: var(--white);
+        opacity: 1;
+    }
+
+    .footer-links a:hover::before {
+        width: 100%;
+    }
+
+    .footer-divider {
+        border-top: 1px solid rgba(255, 255, 255, 0.2);
+        margin: 2rem 0;
+    }
+
+    .footer-bottom {
+        text-align: center;
+        color: rgba(255, 255, 255, 0.7);
+        font-size: 0.9rem;
+    }
+
+    .footer-bottom p {
+        margin-bottom: 0.25rem;
+    }
+</style>
+
+<!-- Footer Section -->
+<footer class="site-footer">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-4 footer-col">
+                <img src="https://d1muf25xaso8hp.cloudfront.net/https%3A%2F%2F11d96a0e7e946a6d02eea1b59ed8995d.cdn.bubble.io%2Ff1738937103143x452387340290872700%2FSans%2520titre-1%2520%25281%2529.png?w=64&h=64&auto=compress&dpr=1&fit=max" alt="Seminary Logo" class="footer-logo">
+                <p class="footer-description">Trouvez le séminaire idéal pour vos équipes dans les Vosges.</p>
+                <div class="social-icons">
+                    <a href="#" aria-label="Facebook" target="_blank"><i class="fab fa-facebook-f"></i></a>
+                    <a href="#" aria-label="Twitter" target="_blank"><i class="fab fa-twitter"></i></a>
+                    <a href="https://www.linkedin.com/company/sem-inary/?viewAsMember=true" aria-label="LinkedIn" target="_blank"><i class="fab fa-linkedin-in"></i></a>
+                    <a href="#" aria-label="Instagram" target="_blank"><i class="fab fa-instagram"></i></a>
+                </div>
+            </div>
+            <div class="col-md-2 footer-col">
+                <h5>Navigation</h5>
+                <ul class="footer-links">
+                    <li><a href="{{ url_for('info.actualites') }}">Actualités</a></li>
+                    <li><a href="{{ url_for('info.comment_ca_marche') }}">Comment ça marche ?</a></li>
+                    <li><a href="{{ url_for('providers.provider_form') }}">Devenir Prestataire</a></li>
+                    <li><a href="{{ url_for('info.contact') }}">Contact</a></li>
+                </ul>
+            </div>
+            <div class="col-md-3 footer-col">
+                <h5>Ressources</h5>
+                <ul class="footer-links">
+                    <li><a href="{{ url_for('info.faq') }}">FAQ</a></li>
+                    <li><a href="{{ url_for('info.actualites') }}">Actualités</a></li>
+                    <li><a href="{{ url_for('info.about') }}">Qui sommes-nous ?</a></li>
+                    <li><a href="{{ url_for('stats.show_market_stats') }}">Statistiques</a></li>
+                </ul>
+            </div>
+            <div class="col-md-3 footer-col">
+                <h5>Légal</h5>
+                <ul class="footer-links">
+                    <li><a href="{{ url_for('info.mentions_legales') }}">Mentions Légales</a></li>
+                    <li><a href="{{ url_for('home.privacy_policy') }}">Politique de Confidentialité</a></li>
+                    <li><a href="{{ url_for('info.conditions_utilisation') }}">Conditions d'Utilisation</a></li>
+                </ul>
+            </div>
+        </div>
+        <hr class="footer-divider">
+        <div class="footer-bottom">
+            <p>&copy; {{ current_year }} Seminary. Tous droits réservés.</p>
+            <p>Une création innovante pour valoriser les Vosges.</p>
+        </div>
+    </div>
+</footer>
+<!-- End Footer Section --> 
