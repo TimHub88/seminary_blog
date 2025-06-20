@@ -6,56 +6,277 @@
     <title>Seminary Blog - Séminaires d'entreprise dans les Vosges</title>
     <meta name="description" content="Blog dédié aux séminaires d'entreprise dans les Vosges. Découvrez nos conseils, actualités et guides pour organiser vos événements professionnels en pleine nature.">
     
+    <!-- Google Fonts - Poppins -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
+        /* Global Poppins Font Application */
+        * {
+            font-family: 'Poppins', sans-serif !important;
+        }
+        
         :root {
             --primary-color: #7E22CE;
             --primary-light: #A94BE0;
+            --primary-dark: #6B1B9A;
+            --secondary-color: #F8F9FA;
+            --text-dark: #2D3748;
+            --text-light: #718096;
+            --border-color: #E2E8F0;
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             line-height: 1.6;
-            background-color: #f8f9fa;
+            background-color: var(--secondary-color);
+            color: var(--text-dark);
         }
 
+        /* Hero Section */
         .hero-section {
             background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%);
             color: white;
             padding: 4rem 0;
+            position: relative;
+            overflow: hidden;
         }
 
+        .hero-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="50" cy="50" r="1" fill="white" opacity="0.1"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+            opacity: 0.3;
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 2;
+        }
+
+        .hero-title {
+            font-weight: 800;
+            font-size: 3.5rem;
+            margin-bottom: 1.5rem;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .hero-subtitle {
+            font-weight: 500;
+            font-size: 1.25rem;
+            margin-bottom: 2rem;
+            opacity: 0.95;
+        }
+
+        .hero-cta {
+            background: white;
+            color: var(--primary-color);
+            padding: 1rem 2rem;
+            border-radius: 50px;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .hero-cta:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+            color: var(--primary-dark);
+        }
+
+        /* Blog Cards */
         .blog-card {
             background: white;
-            border-radius: 12px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+            border-radius: 16px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
             transition: all 0.3s ease;
             margin-bottom: 2rem;
+            border: 1px solid var(--border-color);
+            overflow: hidden;
         }
 
         .blog-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+            transform: translateY(-4px);
+            box-shadow: 0 12px 40px rgba(126, 34, 206, 0.1);
+            border-color: var(--primary-color);
         }
 
-        .stat-card {
-            background: white;
-            padding: 1.5rem;
-            border-radius: 8px;
-            text-align: center;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        .blog-card h3 {
+            font-weight: 600;
+            color: var(--text-dark);
             margin-bottom: 1rem;
         }
 
+        .blog-card h3 a {
+            color: inherit;
+            text-decoration: none;
+        }
+
+        .blog-card h3 a:hover {
+            color: var(--primary-color);
+        }
+
+        /* Stat Cards */
+        .stat-card {
+            background: white;
+            padding: 2rem;
+            border-radius: 16px;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            margin-bottom: 1.5rem;
+            border: 1px solid var(--border-color);
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        }
+
         .stat-number {
-            font-size: 2rem;
+            font-size: 2.5rem;
             font-weight: 700;
             color: var(--primary-color);
             display: block;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            color: var(--text-light);
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+
+        /* Info Cards */
+        .info-card {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            border: 1px solid var(--border-color);
+            transition: all 0.3s ease;
+        }
+
+        .info-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .info-card .card-title {
+            font-weight: 600;
+            color: var(--text-dark);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .info-card .card-title i {
+            color: var(--primary-color);
+        }
+
+        /* Theme Badges */
+        .theme-badge {
+            background: var(--primary-color);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 25px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            margin: 0.25rem;
+            display: inline-block;
+            transition: all 0.3s ease;
+        }
+
+        .theme-badge:hover {
+            background: var(--primary-dark);
+            transform: scale(1.05);
+        }
+
+        /* Newsletter Form */
+        .newsletter-form {
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-light));
+            border-radius: 12px;
+            padding: 1.5rem;
+            color: white;
+        }
+
+        .newsletter-form .form-control {
+            border: none;
+            border-radius: 25px;
+            padding: 0.75rem 1.25rem;
+            font-weight: 500;
+        }
+
+        .newsletter-form .btn {
+            background: white;
+            color: var(--primary-color);
+            border: none;
+            border-radius: 25px;
+            padding: 0.75rem 1.5rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .newsletter-form .btn:hover {
+            background: var(--secondary-color);
+            transform: scale(1.05);
+        }
+
+        /* Preparation State */
+        .preparation-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            margin-bottom: 2rem;
+        }
+
+        .preparation-state i {
+            color: var(--primary-color);
+            margin-bottom: 1.5rem;
+        }
+
+        .preparation-state h3 {
+            font-weight: 600;
+            color: var(--text-dark);
+            margin-bottom: 1rem;
+        }
+
+        .preparation-state .lead {
+            color: var(--text-light);
+            font-weight: 500;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .hero-title {
+                font-size: 2.5rem;
+            }
+            
+            .hero-subtitle {
+                font-size: 1.1rem;
+            }
+            
+            .stat-card {
+                padding: 1.5rem;
+            }
+            
+            .stat-number {
+                font-size: 2rem;
+            }
         }
     </style>
 </head>
@@ -64,27 +285,20 @@
     <!-- Seminary Header -->
     <div id="header-container"></div>
     
-    <script>
-        // Charger le header Seminary
-        fetch('./templates/header.html')
-            .then(response => response.text())
-            .then(html => {
-                document.getElementById('header-container').innerHTML = html;
-            })
-            .catch(error => console.log('Header non chargé:', error));
-    </script>
     <!-- Hero Section -->
     <section class="hero-section">
         <div class="container">
             <div class="row align-items-center">
                 <div class="col-lg-8">
-                    <h1 class="display-4 fw-bold mb-4">Seminary Blog</h1>
-                    <p class="lead mb-4">Votre guide expert pour les séminaires d'entreprise dans les Vosges</p>
-                    <p class="mb-4">Découvrez nos conseils, actualités et guides pour organiser des événements professionnels mémorables en pleine nature.</p>
-                    <a href="https://goseminary.com" class="btn btn-light btn-lg">
-                        <i class="fas fa-rocket me-2"></i>
-                        Organiser mon séminaire
-                    </a>
+                    <div class="hero-content">
+                        <h1 class="hero-title">Seminary Blog</h1>
+                        <p class="hero-subtitle">Votre guide expert pour les séminaires d'entreprise dans les Vosges</p>
+                        <p class="mb-4">Découvrez nos conseils, actualités et guides pour organiser des événements professionnels mémorables en pleine nature.</p>
+                        <a href="https://goseminary.com" class="hero-cta">
+                            <i class="fas fa-rocket"></i>
+                            Organiser mon séminaire
+                        </a>
+                    </div>
                 </div>
                 <div class="col-lg-4 text-center">
                     <i class="fas fa-mountain fa-8x opacity-50"></i>
@@ -96,74 +310,90 @@
     <!-- Main Content -->
     <div class="container my-5">
         <div class="row">
+            <!-- Articles Section -->
             <div class="col-lg-8">
-                
                 <!-- Articles dynamiques -->
-                
-                <div class="text-center py-5">
-                    <i class="fas fa-edit fa-4x text-primary mb-3"></i>
+                <div class="preparation-state">
+                    <i class="fas fa-edit fa-4x"></i>
                     <h3>Articles en préparation</h3>
                     <p class="lead">Notre système d'IA génère automatiquement du contenu de qualité toutes les 48 heures.</p>
                     <p>Le premier article sera bientôt disponible !</p>
-                </div>
-                <!-- Fin articles dynamiques -->
-                
+                    
+                    <!-- Statistics Row -->
+                    <div class="row mt-4">
+                        <div class="col-md-4">
+                            <div class="stat-card">
+                                <span class="stat-number">48h</span>
+                                <div class="stat-label">Fréquence de publication</div>
+                            </div>
+                        </div>
                         <div class="col-md-4">
                             <div class="stat-card">
                                 <span class="stat-number">4</span>
-                                <div class="text-muted">Passes d'optimisation IA</div>
+                                <div class="stat-label">Passes d'optimisation IA</div>
                             </div>
                         </div>
                         <div class="col-md-4">
                             <div class="stat-card">
                                 <span class="stat-number">95+</span>
-                                <div class="text-muted">Score SEO moyen</div>
+                                <div class="stat-label">Score SEO moyen</div>
                             </div>
                         </div>
                     </div>
                 </div>
+                <!-- Fin articles dynamiques -->
             </div>
             
+            <!-- Sidebar -->
             <div class="col-lg-4">
-                <div class="card mb-4">
-                    <div class="card-body">
+                <!-- About Card -->
+                <div class="info-card mb-4">
+                    <div class="card-body p-4">
                         <h5 class="card-title">
-                            <i class="fas fa-info-circle me-2 text-primary"></i>
+                            <i class="fas fa-info-circle"></i>
                             À propos
                         </h5>
                         <p class="card-text">Seminary Blog est alimenté par un système d'IA avancé qui génère automatiquement du contenu de qualité sur les séminaires d'entreprise dans les Vosges.</p>
-                        <p class="card-text"><small class="text-muted">Chaque article passe par 4 étapes d'optimisation pour garantir une qualité SEO exceptionnelle.</small></p>
+                        <p class="card-text">
+                            <small class="text-muted">Chaque article passe par 4 étapes d'optimisation pour garantir une qualité SEO exceptionnelle.</small>
+                        </p>
                     </div>
                 </div>
 
-                <div class="card">
-                    <div class="card-body">
+                <!-- Themes Card -->
+                <div class="info-card mb-4">
+                    <div class="card-body p-4">
                         <h5 class="card-title">
-                            <i class="fas fa-tags me-2 text-primary"></i>
+                            <i class="fas fa-tags"></i>
                             Thématiques
                         </h5>
-                        <div class="d-flex flex-wrap gap-2">
-                            <span class="badge bg-primary">Team Building</span>
-                            <span class="badge bg-primary">Formation Pro</span>
-                            <span class="badge bg-primary">Nature</span>
-                            <span class="badge bg-primary">Statistiques</span>
-                            <span class="badge bg-primary">Guides</span>
-                            <span class="badge bg-primary">Vosges</span>
+                        <div class="mb-3">
+                            <span class="theme-badge">Team Building</span>
+                            <span class="theme-badge">Formation Pro</span>
+                            <span class="theme-badge">Nature</span>
+                            <span class="theme-badge">Statistiques</span>
+                            <span class="theme-badge">Guides</span>
+                            <span class="theme-badge">Vosges</span>
                         </div>
-                        <hr>
-                        <h6 class="mt-3">
-                            <i class="fas fa-envelope me-2"></i>
+                    </div>
+                </div>
+
+                <!-- Newsletter Card -->
+                <div class="info-card">
+                    <div class="card-body p-4">
+                        <h5 class="card-title">
+                            <i class="fas fa-envelope"></i>
                             Newsletter
-                        </h6>
-                        <p class="small text-muted">Recevez nos derniers articles par email.</p>
-                        <form class="mt-2">
-                            <div class="input-group">
-                                <input type="email" class="form-control form-control-sm" placeholder="Votre email">
-                                <button class="btn btn-primary btn-sm" type="submit">
+                        </h5>
+                        <p class="small text-muted mb-3">Recevez nos derniers articles par email.</p>
+                        <div class="newsletter-form">
+                            <form class="d-flex gap-2">
+                                <input type="email" class="form-control flex-grow-1" placeholder="Votre email">
+                                <button class="btn" type="submit">
                                     <i class="fas fa-paper-plane"></i>
                                 </button>
-                            </div>
-                        </form>
+                            </form>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -173,7 +403,16 @@
     <!-- Seminary Footer -->
     <div id="footer-container"></div>
     
+    <!-- Scripts -->
     <script>
+        // Charger le header Seminary
+        fetch('./templates/header.html')
+            .then(response => response.text())
+            .then(html => {
+                document.getElementById('header-container').innerHTML = html;
+            })
+            .catch(error => console.log('Header non chargé:', error));
+
         // Charger le footer Seminary
         fetch('./templates/footer.html')
             .then(response => response.text())

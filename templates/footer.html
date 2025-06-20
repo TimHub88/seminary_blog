@@ -2,11 +2,16 @@
 <!-- Footer autonome de Seminary pour production -->
 
 <style>
-    /* Variables CSS nécessaires pour le footer */
+    /* Variables CSS nécessaires pour le footer avec Poppins */
     :root {
         --white: #FFFFFF;
         --transition-fast: 0.2s ease;
         --transition-slow: 0.5s ease;
+    }
+
+    /* Global Poppins Font Application pour footer */
+    .site-footer * {
+        font-family: 'Poppins', sans-serif !important;
     }
 
     /* Styles pour le footer */
@@ -36,6 +41,7 @@
         margin-bottom: 1.5rem;
         line-height: 1.6;
         color: rgba(255, 255, 255, 0.85);
+        font-weight: 400;
     }
 
     .social-icons a {
@@ -82,6 +88,7 @@
         text-decoration: none;
         transition: color var(--transition-fast);
         position: relative;
+        font-weight: 400;
     }
 
     .footer-links a::before {
@@ -117,6 +124,7 @@
 
     .footer-bottom p {
         margin-bottom: 0.25rem;
+        font-weight: 400;
     }
 </style>
 
@@ -137,27 +145,27 @@
             <div class="col-md-2 footer-col">
                 <h5>Navigation</h5>
                 <ul class="footer-links">
-                    <li><a href="https://goseminary.com/news">Actualités</a></li>
-                    <li><a href="https://goseminary.com/how-it-works">Comment ça marche ?</a></li>
-                    <li><a href="https://goseminary.com/providers">Devenir Prestataire</a></li>
-                    <li><a href="https://goseminary.com/contact">Contact</a></li>
+                    <li><a href="https://goseminary.com/info/actualites">Actualités</a></li>
+                    <li><a href="https://goseminary.com/info/comment-ca-marche">Comment ça marche ?</a></li>
+                    <li><a href="https://goseminary.com/provider/form">Devenir Prestataire</a></li>
+                    <li><a href="https://goseminary.com/info/contact">Contact</a></li>
                 </ul>
             </div>
             <div class="col-md-3 footer-col">
                 <h5>Ressources</h5>
                 <ul class="footer-links">
-                    <li><a href="https://goseminary.com/faq">FAQ</a></li>
-                    <li><a href="https://goseminary.com/news">Actualités</a></li>
-                    <li><a href="https://goseminary.com/about">Qui sommes-nous ?</a></li>
-                    <li><a href="https://goseminary.com/statistics">Statistiques</a></li>
+                    <li><a href="https://goseminary.com/info/faq">FAQ</a></li>
+                    <li><a href="https://goseminary.com/info/actualites">Actualités</a></li>
+                    <li><a href="https://goseminary.com/info/parlons-en">Qui sommes-nous ?</a></li>
+                    <li><a href="https://goseminary.com/stats/market">Statistiques</a></li>
                 </ul>
             </div>
             <div class="col-md-3 footer-col">
                 <h5>Légal</h5>
                 <ul class="footer-links">
-                    <li><a href="https://goseminary.com/legal">Mentions Légales</a></li>
-                    <li><a href="https://goseminary.com/privacy">Politique de Confidentialité</a></li>
-                    <li><a href="https://goseminary.com/terms">Conditions d'Utilisation</a></li>
+                    <li><a href="https://goseminary.com/info/mentions-legales">Mentions Légales</a></li>
+                    <li><a href="https://goseminary.com/privacy-policy">Politique de Confidentialité</a></li>
+                    <li><a href="https://goseminary.com/info/conditions-utilisation">Conditions d'Utilisation</a></li>
                 </ul>
             </div>
         </div>
