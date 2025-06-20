@@ -53,91 +53,124 @@ class ArticleGenerator:
         self.image_handler = ImageHandler(unsplash_api_key)
         self.seminary_integrator = SeminaryIntegrator()
         
-        # Configuration de génération
+        # Configuration de génération - Optimisée pour DeepSeek-R1
         self.generation_config = {
-            'max_retries': 5,
-            'retry_delay': 30,  # secondes
+            'max_retries': 3,  # Moins de retries car ils sont longs
+            'retry_delay': 20,  # Délai réduit
             'chutes_api_url': 'https://llm.chutes.ai/v1/chat/completions',  # URL officielle Chutes AI
             'chutes_model': 'deepseek-ai/DeepSeek-R1-0528',  # Modèle officiel Chutes AI
-            'min_article_words': 800,
-            'max_article_words': 2000,
-            'target_word_count': 1200,
-            'seo_score_threshold': 75,
-            'max_improvement_attempts': 3
+            'min_article_words': 600,  # Objectifs plus réalistes
+            'max_article_words': 1500,
+            'target_word_count': 900,  # Plus court pour éviter les timeouts
+            'seo_score_threshold': 70,  # Seuil plus permissif
+            'max_improvement_attempts': 2,  # Moins d'améliorations
+            'api_timeout': 180,  # 3 minutes pour DeepSeek-R1
+            'max_tokens_per_call': 1500  # Limite pour éviter les timeouts
         }
         
         # Templates de prompts
         self.prompts = {
             'creative_generation': '''
-            Tu es un expert en content marketing spécialisé dans les séminaires d'entreprise dans les Vosges.
-            
-            CONTEXTE EXISTANT:
-            {context}
-            
-            MISSION: Écris un article de blog unique de {target_words} mots sur les séminaires d'entreprise dans les Vosges.
-            
-            CONTRAINTES:
-            - Sujet différent des articles existants
-            - Ton professionnel mais engageant
-            - Focus sur les avantages concrets pour les entreprises
-            - Intégrer des éléments sur la région des Vosges
-            - Structure claire avec sous-titres
-            
-            STRUCTURE REQUISE:
-            1. Titre accrocheur (H1)
-            2. Introduction engageante
-            3. 3-4 sections principales avec sous-titres (H2)
-            4. Conclusion avec appel à l'action
-            
-            MOTS-CLÉS À INTÉGRER NATURELLEMENT:
-            - séminaire d'entreprise
-            - Vosges
-            - team building
-            - formation professionnelle
-            - nature
-            - montagne
-            
-            Écris l'article en français, format HTML avec balises sémantiques appropriées.
+            Écris DIRECTEMENT un article de blog de {target_words} mots sur les séminaires d'entreprise dans les Vosges.
+
+            IMPORTANT: Ne montre pas ton processus de réflexion, donne directement l'article final.
+
+            STRUCTURE:
+            <h1>Titre principal</h1>
+            <p>Introduction engageante</p>
+            <h2>Section 1</h2>
+            <p>Contenu...</p>
+            <h2>Section 2</h2>
+            <p>Contenu...</p>
+            <h2>Conclusion</h2>
+            <p>Appel à l'action</p>
+
+            MOTS-CLÉS: séminaire d'entreprise, Vosges, team building, formation, nature, montagne
+
+            CONTEXTE EXISTANT: {context}
             ''',
             
             'seo_improvement': '''
-            MISSION: Améliore cet article pour optimiser son SEO.
-            
-            ARTICLE ACTUEL:
+            Améliore DIRECTEMENT cet article pour le SEO. Ne montre pas ton processus de réflexion.
+
+            ARTICLE À AMÉLIORER:
             {article_content}
-            
-            PROBLÈMES SEO DÉTECTÉS:
+
+            PROBLÈMES À CORRIGER:
             {seo_issues}
-            
-            AMÉLIORATIONS REQUISES:
-            1. Optimiser le titre (30-60 caractères)
-            2. Améliorer la meta description (120-160 caractères)
-            3. Enrichir le contenu avec des mots-clés pertinents
-            4. Améliorer la structure des titres
-            5. Corriger les problèmes techniques identifiés
-            
-            Renvoie UNIQUEMENT la version améliorée de l'article en HTML complet.
+
+            Renvoie UNIQUEMENT l'article HTML amélioré:
             ''',
             
             'content_enrichment': '''
-            MISSION: Enrichis cet article pour atteindre {target_words} mots et améliorer l'engagement.
-            
-            ARTICLE ACTUEL:
+            Enrichis DIRECTEMENT cet article pour atteindre {target_words} mots. Ne montre pas ton processus de réflexion.
+
+            ARTICLE À ENRICHIR:
             {article_content}
-            
-            ENRICHISSEMENTS DEMANDÉS:
-            - Ajouter des exemples concrets
-            - Développer les bénéfices pour les entreprises
-            - Inclure des témoignages fictifs réalistes
-            - Enrichir les descriptions de la région des Vosges
-            - Ajouter des conseils pratiques
-            
-            Conserve la structure existante et renvoie l'article complet enrichi en HTML.
+
+            Ajoute: exemples concrets, bénéfices entreprises, descriptions Vosges, conseils pratiques.
+
+            Renvoie UNIQUEMENT l'article HTML enrichi:
             '''
         }
         
         # Charger le template d'article
         self.article_template = self._load_article_template()
+    
+    def _extract_final_content_from_deepseek(self, raw_content: str) -> str:
+        """
+        Extrait le contenu final du modèle DeepSeek-R1 qui expose son reasoning.
+        Le modèle DeepSeek-R1 commence souvent par <think>...</think> puis donne la vraie réponse.
+        """
+        import re
+        
+        # Cas 1: Contenu avec balises <think>
+        if '<think>' in raw_content:
+            # Chercher ce qui vient après </think>
+            think_pattern = r'<think>.*?</think>\s*(.*)'
+            match = re.search(think_pattern, raw_content, re.DOTALL)
+            if match:
+                final_content = match.group(1).strip()
+                if final_content and len(final_content) > 100:  # Assurer un contenu substantiel
+                    return final_content
+        
+        # Cas 2: Contenu qui commence directement par du reasoning
+        lines = raw_content.split('\n')
+        final_lines = []
+        reasoning_ended = False
+        
+        for line in lines:
+            line = line.strip()
+            if not line:
+                continue
+                
+            # Détecter la fin du reasoning (phrases méta sur le processus)
+            if any(phrase in line.lower() for phrase in [
+                'je vais', 'il faut', 'l\'utilisateur', 'je me concentre', 
+                'il faudra', 'j\'éviterai', 'hmm', 'probablement', 
+                'semble avoir besoin', 'visiblement', 'la chute sur'
+            ]):
+                continue
+                
+            # Si c'est une phrase normale (pas du meta-reasoning)
+            if (line.startswith('#') or  # Titre
+                line.startswith('<') or   # HTML
+                len(line.split()) > 5):   # Phrase substantielle
+                reasoning_ended = True
+                
+            if reasoning_ended and line:
+                final_lines.append(line)
+        
+        if final_lines and len('\n'.join(final_lines)) > 200:
+            return '\n'.join(final_lines)
+        
+        # Cas 3: Fallback - prendre tout le contenu s'il semble valide
+        if len(raw_content) > 300 and not raw_content.lower().startswith('hmm'):
+            return raw_content
+            
+        # Cas 4: Contenu trop court ou invalide
+        logger.warning("Contenu généré insuffisant ou invalide")
+        return raw_content
     
     def _load_article_template(self) -> Template:
         """Charge le template Jinja2 pour les articles."""
@@ -206,7 +239,7 @@ class ArticleGenerator:
                     self.generation_config['chutes_api_url'],
                     headers=headers,
                     json=payload,
-                    timeout=60
+                    timeout=self.generation_config['api_timeout']  # 3 minutes pour DeepSeek-R1
                 )
                 
                 response.raise_for_status()
@@ -214,10 +247,12 @@ class ArticleGenerator:
                 
                 # Format de réponse OpenAI-compatible
                 if 'choices' in result and len(result['choices']) > 0:
-                    generated_text = result['choices'][0]['message']['content'].strip()
+                    raw_text = result['choices'][0]['message']['content'].strip()
                     
-                    if generated_text:
-                        logger.info(f"Génération réussie: {len(generated_text)} caractères")
+                    if raw_text:
+                        # Extraire le contenu final du modèle DeepSeek-R1
+                        generated_text = self._extract_final_content_from_deepseek(raw_text)
+                        logger.info(f"Génération réussie: {len(generated_text)} caractères (extrait de {len(raw_text)} caractères bruts)")
                         return generated_text
                     else:
                         logger.warning("Texte généré vide")
@@ -257,8 +292,8 @@ class ArticleGenerator:
         
         generated_content = self.call_chutes_api(
             prompt, 
-            max_tokens=3000, 
-            temperature=0.8  # Plus créatif pour le premier pass
+            max_tokens=self.generation_config['max_tokens_per_call'],  # Limite pour éviter les timeouts
+            temperature=0.6  # Température plus basse pour DeepSeek-R1
         )
         
         if not generated_content:

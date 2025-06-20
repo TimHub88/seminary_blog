@@ -46,6 +46,48 @@ class ContextManager:
         if not self.context_file.exists():
             self._initialize_context_file()
     
+    def _extract_final_content_from_deepseek(self, raw_content: str) -> str:
+        """
+        Extrait le contenu final du modèle DeepSeek-R1 qui expose son reasoning.
+        Version simplifiée pour les résumés.
+        """
+        import re
+        
+        # Cas 1: Contenu avec balises <think>
+        if '<think>' in raw_content:
+            think_pattern = r'<think>.*?</think>\s*(.*)'
+            match = re.search(think_pattern, raw_content, re.DOTALL)
+            if match:
+                final_content = match.group(1).strip()
+                if final_content and len(final_content) > 20:
+                    return final_content
+        
+        # Cas 2: Supprimer les phrases de reasoning typiques
+        lines = raw_content.split('\n')
+        final_lines = []
+        
+        for line in lines:
+            line = line.strip()
+            if not line:
+                continue
+                
+            # Ignorer les phrases de reasoning
+            if any(phrase in line.lower() for phrase in [
+                'je vais', 'il faut', 'l\'utilisateur', 'hmm', 'probablement',
+                'semble', 'visiblement', 'il faudra', 'j\'éviterai'
+            ]):
+                continue
+                
+            # Garder les phrases substantielles
+            if len(line.split()) > 3:
+                final_lines.append(line)
+        
+        if final_lines:
+            return '\n'.join(final_lines)
+        
+        # Fallback
+        return raw_content
+    
     def _initialize_context_file(self) -> None:
         """Initialise le fichier context_window.json."""
         initial_context = {
@@ -193,15 +235,11 @@ class ContextManager:
         # Tronquer le contenu si trop long (limite API)
         content_preview = article_content[:3000] if len(article_content) > 3000 else article_content
         
-        prompt = f"""
-        Résume cet article de blog sur les séminaires dans les Vosges en exactement {max_words} mots.
-        Le résumé doit être informatif, concis et mentionner les points clés.
-        
-        Article à résumer:
-        {content_preview}
-        
-        Résumé en {max_words} mots:
-        """
+        prompt = f"""Résume DIRECTEMENT cet article en {max_words} mots. Ne montre pas ton processus de réflexion.
+
+Article: {content_preview}
+
+Résumé ({max_words} mots):"""
         
         try:
             # Configuration de l'appel API Chutes AI
@@ -227,14 +265,16 @@ class ContextManager:
             # URL officielle Chutes AI
             api_url = "https://llm.chutes.ai/v1/chat/completions"
             
-            response = requests.post(api_url, headers=headers, json=payload, timeout=30)
+            response = requests.post(api_url, headers=headers, json=payload, timeout=120)  # 2 minutes pour DeepSeek-R1
             response.raise_for_status()
             
             result = response.json()
             
-            # Format de réponse OpenAI-compatible
+            # Format de réponse OpenAI-compatible avec extraction DeepSeek-R1
             if 'choices' in result and len(result['choices']) > 0:
-                summary = result['choices'][0]['message']['content'].strip()
+                raw_summary = result['choices'][0]['message']['content'].strip()
+                # Extraire le contenu final (après le reasoning de DeepSeek-R1)
+                summary = self._extract_final_content_from_deepseek(raw_summary)
             else:
                 summary = ''
             
