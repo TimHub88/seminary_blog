@@ -146,8 +146,8 @@ jobs:
       run: |
         echo "🔄 Mise à jour de la page d'accueil..."
         
-        # Script Python pour régénérer index.html
-        python -c "
+# Créer script Python temporaire pour mise à jour index
+        cat > update_index.py << 'EOF'
 import os
 import re
 from datetime import datetime
@@ -171,7 +171,7 @@ for html_file in articles_dir.glob('*.html'):
             title = title_match.group(1) if title_match else title_slug.replace('-', ' ').title()
             
             # Extraire description
-            desc_match = re.search(r'<meta name=\"description\" content=\"(.*?)\"', content)
+            desc_match = re.search(r'<meta name="description" content="(.*?)"', content)
             description = desc_match.group(1) if desc_match else 'Article sur les séminaires dans les Vosges'
             
             articles.append({
@@ -187,45 +187,36 @@ for html_file in articles_dir.glob('*.html'):
 # Trier par date décroissante
 articles.sort(key=lambda x: x['date'], reverse=True)
 
-# Générer index.html
+# Générer index.html simple
 index_html = '''<!DOCTYPE html>
-<html lang=\"fr\">
+<html lang="fr">
 <head>
-    <meta charset=\"UTF-8\">
-    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Seminary Blog - Séminaires d'entreprise dans les Vosges</title>
-    <meta name=\"description\" content=\"Blog dédié aux séminaires d'entreprise dans les Vosges. Découvrez nos conseils et actualités.\">
+    <meta name="description" content="Blog dédié aux séminaires d'entreprise dans les Vosges.">
     <style>
         body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
         h1 { color: #7E22CE; }
         .article { border: 1px solid #ddd; margin: 20px 0; padding: 20px; border-radius: 8px; }
         .date { color: #666; font-size: 0.9em; }
-        .badge { background: #7E22CE; color: white; padding: 4px 8px; border-radius: 4px; font-size: 0.8em; }
     </style>
 </head>
 <body>
-    <h1>Seminary Blog <span class=\"badge\">Vosges</span></h1>
-    <p>Découvrez nos derniers articles sur les séminaires d'entreprise dans les magnifique région des Vosges.</p>
-    
-    <div class=\"articles\">'''
+    <h1>Seminary Blog</h1>
+    <p>Articles sur les séminaires d'entreprise dans les Vosges.</p>
+    <div class="articles">'''
 
-for article in articles[:10]:  # Derniers 10 articles
+for article in articles[:10]:
     index_html += f'''
-        <div class=\"article\">
-            <h2><a href=\"articles/{article['filename']}\">{article['title']}</a></h2>
-            <p class=\"date\">📅 {article['date_str']}</p>
+        <div class="article">
+            <h2><a href="articles/{article['filename']}">{article['title']}</a></h2>
+            <p class="date">📅 {article['date_str']}</p>
             <p>{article['description']}</p>
         </div>'''
 
 index_html += '''
     </div>
-    
-    <footer style=\"margin-top: 40px; padding: 20px; background: #f5f5f5; text-align: center;\">
-        <p>© 2024 <a href=\"https://goseminary.com\">Seminary</a> - Organisateur de séminaires dans les Vosges</p>
-        <p><a href=\"https://goseminary.com/statistics\">Statistiques</a> | 
-           <a href=\"https://goseminary.com/reservations\">Réservations</a> | 
-           <a href=\"https://goseminary.com/providers\">Prestataires</a></p>
-    </footer>
 </body>
 </html>'''
 
@@ -234,7 +225,10 @@ with open('index.html', 'w', encoding='utf-8') as f:
     f.write(index_html)
 
 print('✅ Index.html mis à jour')
-"
+EOF
+
+        # Exécuter le script
+        python update_index.py
     
     - name: 📊 Generate Statistics
       if: steps.check_articles.outputs.skip_generation == 'false' && steps.generate_article.outputs.generation_success == 'true'

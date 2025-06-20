@@ -1,5 +1,5 @@
 <!-- Fichier: seminary/presentation/templates/footer.html -->
-<!-- Footer autonome de Seminary avec styles inline -->
+<!-- Footer autonome de Seminary pour production -->
 
 <style>
     /* Variables CSS nécessaires pour le footer */
@@ -137,33 +137,33 @@
             <div class="col-md-2 footer-col">
                 <h5>Navigation</h5>
                 <ul class="footer-links">
-                    <li><a href="{{ url_for('info.actualites') }}">Actualités</a></li>
-                    <li><a href="{{ url_for('info.comment_ca_marche') }}">Comment ça marche ?</a></li>
-                    <li><a href="{{ url_for('providers.provider_form') }}">Devenir Prestataire</a></li>
-                    <li><a href="{{ url_for('info.contact') }}">Contact</a></li>
+                    <li><a href="https://goseminary.com/news">Actualités</a></li>
+                    <li><a href="https://goseminary.com/how-it-works">Comment ça marche ?</a></li>
+                    <li><a href="https://goseminary.com/providers">Devenir Prestataire</a></li>
+                    <li><a href="https://goseminary.com/contact">Contact</a></li>
                 </ul>
             </div>
             <div class="col-md-3 footer-col">
                 <h5>Ressources</h5>
                 <ul class="footer-links">
-                    <li><a href="{{ url_for('info.faq') }}">FAQ</a></li>
-                    <li><a href="{{ url_for('info.actualites') }}">Actualités</a></li>
-                    <li><a href="{{ url_for('info.about') }}">Qui sommes-nous ?</a></li>
-                    <li><a href="{{ url_for('stats.show_market_stats') }}">Statistiques</a></li>
+                    <li><a href="https://goseminary.com/faq">FAQ</a></li>
+                    <li><a href="https://goseminary.com/news">Actualités</a></li>
+                    <li><a href="https://goseminary.com/about">Qui sommes-nous ?</a></li>
+                    <li><a href="https://goseminary.com/statistics">Statistiques</a></li>
                 </ul>
             </div>
             <div class="col-md-3 footer-col">
                 <h5>Légal</h5>
                 <ul class="footer-links">
-                    <li><a href="{{ url_for('info.mentions_legales') }}">Mentions Légales</a></li>
-                    <li><a href="{{ url_for('home.privacy_policy') }}">Politique de Confidentialité</a></li>
-                    <li><a href="{{ url_for('info.conditions_utilisation') }}">Conditions d'Utilisation</a></li>
+                    <li><a href="https://goseminary.com/legal">Mentions Légales</a></li>
+                    <li><a href="https://goseminary.com/privacy">Politique de Confidentialité</a></li>
+                    <li><a href="https://goseminary.com/terms">Conditions d'Utilisation</a></li>
                 </ul>
             </div>
         </div>
         <hr class="footer-divider">
         <div class="footer-bottom">
-            <p>&copy; {{ current_year }} Seminary. Tous droits réservés.</p>
+            <p>&copy; 2024 Seminary. Tous droits réservés.</p>
             <p>Une création innovante pour valoriser les Vosges.</p>
         </div>
     </div>

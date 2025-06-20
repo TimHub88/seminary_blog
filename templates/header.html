@@ -1,8 +1,5 @@
-<!-- Fichier: seminary/presentation/templates/header.html -->
-<!-- Header autonome de Seminary avec styles inline -->
-
 <style>
-    /* Variables CSS nécessaires pour le header */
+    /* Variables CSS pour le header Seminary */
     :root {
         --primary-color: #7E22CE;
         --primary-color-light: #A94BE0;
@@ -126,10 +123,6 @@
         border: 1px solid rgba(255, 255, 255, 0.3);
     }
 
-    #userDropdown.header-button-primary {
-        color: var(--white);
-    }
-
     .header-button-primary:hover {
         background-color: rgba(255, 255, 255, 0.1);
     }
@@ -189,18 +182,8 @@
         }
     }
 
-    /* Masquer l'ancienne carte des Vosges */
-    .vosges-map {
-        display: none !important;
-    }
-
     /* Bootstrap Navbar Collapse Styling (lg breakpoint) */
     @media (max-width: 991.98px) {
-        .vosges-map {
-            height: 45px !important;
-            max-height: 45px !important;
-        }
-
         .navbar-collapse {
             background-color: var(--white);
             padding: 1rem;
@@ -228,46 +211,30 @@
             margin-top: 1rem;
         }
 
-        .navbar-collapse .dropdown {
-             width: 100%;
-             margin-bottom: 0.5rem;
-        }
-        
-        .navbar-collapse .dropdown .btn {
-            color: var(--primary-color) !important;
-            border-color: var(--primary-color) !important;
-            background-color: transparent !important;
-            width: 100%;
-            text-align: center;
-        }
-        .navbar-collapse .dropdown .btn:hover {
-            background-color: var(--primary-transparent) !important;
-        }
-
-        .navbar-collapse .auth-btn {
+        .navbar-collapse .header-button {
             width: 100%;
             margin-bottom: 0.5rem;
             text-align: center;
         }
-        .navbar-collapse .auth-btn:last-child {
+        .navbar-collapse .header-button:last-child {
             margin-bottom: 0;
         }
         
-        .navbar-collapse .auth-btn.login-btn {
+        .navbar-collapse .header-button-primary {
             background-color: var(--primary-color);
             color: var(--white);
             border: none;
         }
-        .navbar-collapse .auth-btn.login-btn:hover {
+        .navbar-collapse .header-button-primary:hover {
             background-color: var(--primary-color-dark);
         }
         
-        .navbar-collapse .auth-btn.register-btn {
+        .navbar-collapse .header-button-signup {
              background-color: transparent;
              color: var(--primary-color);
              border: 1px solid var(--primary-color);
         }
-        .navbar-collapse .auth-btn.register-btn:hover {
+        .navbar-collapse .header-button-signup:hover {
              background-color: var(--primary-transparent);
         }
     }
@@ -309,25 +276,11 @@
 </style>
 
 <header>
-    <!-- Flash Messages -->
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            <div class="flash-messages container mt-3">
-                {% for category, message in messages %}
-                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-                        {{ message }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                    </div>
-                {% endfor %}
-            </div>
-        {% endif %}
-    {% endwith %}
-
     <!-- Navbar Seminary -->
     <nav class="new-header navbar navbar-expand-lg navbar-dark">
         <div class="container-fluid">
             <!-- Logo -->
-            <a class="header-logo navbar-brand" href="{{ url_for('home.index') }}">
+            <a class="header-logo navbar-brand" href="https://goseminary.com">
                 <img src="https://d1muf25xaso8hp.cloudfront.net/https%3A%2F%2F11d96a0e7e946a6d02eea1b59ed8995d.cdn.bubble.io%2Ff1738937103143x452387340290872700%2FSans%2520titre-1%2520%25281%2529.png?w=64&h=64&auto=compress&dpr=1&fit=max" alt="Seminary">
                 <span class="header-logo-text">Seminary</span>
                 
@@ -349,57 +302,30 @@
             </button>
 
             <!-- Collapsible Content -->
-            <div class="collapse navbar-collapse justify-content-end lg:visible lg:flex" id="navbarNavContent">
+            <div class="collapse navbar-collapse justify-content-end" id="navbarNavContent">
                 <!-- Navigation Links -->
                 <ul class="navbar-nav me-3">
-                    <li class="nav-item header-nav-item">
-                        <a href="{{ url_for('info.actualites') }}" class="nav-link header-nav-link">Actualités</a>
+                    <li class="nav-item">
+                        <a href="https://goseminary.com/news" class="nav-link header-nav-link">Actualités</a>
                     </li>
                     <li class="nav-item">
-                        <a href="{{ url_for('info.comment_ca_marche') }}" class="nav-link header-nav-link">Comment ça marche ?</a>
+                        <a href="https://goseminary.com/how-it-works" class="nav-link header-nav-link">Comment ça marche ?</a>
                     </li>
                     <li class="nav-item">
-                        <a href="{{ url_for('stats.show_market_stats') }}" class="nav-link header-nav-link">Statistiques</a>
+                        <a href="https://goseminary.com/statistics" class="nav-link header-nav-link">Statistiques</a>
                     </li>
-                     <li class="nav-item">
-                        <a href="{{ url_for('providers.provider_form') }}" class="nav-link header-nav-link">Devenir prestataire</a>
+                    <li class="nav-item">
+                        <a href="https://goseminary.com/providers" class="nav-link header-nav-link">Devenir prestataire</a>
                     </li>
-                    {% if current_user.is_authenticated %}
-                    <li class="nav-item header-nav-item">
-                        <a href="{{ url_for('reservations.show_reservations') }}" class="nav-link header-nav-link" id="nav-link-reservations">Mes Réservations</a>
+                    <li class="nav-item">
+                        <a href="https://goseminary.com/reservations" class="nav-link header-nav-link">Réservations</a>
                     </li>
-                    {% endif %}
-                    {% if config['DEBUG'] %}
-                     <li class="nav-item">
-                        <a href="{{ url_for('debug.debug_index') }}" class="nav-link header-nav-link">Débogage</a>
-                    </li>
-                    {% endif %}
                 </ul>
 
                 <!-- Authentication Section -->
                 <div class="header-actions d-flex align-items-center">
-                    {% if current_user.is_authenticated %}
-                        <div class="dropdown">
-                            <button class="btn btn-outline-light dropdown-toggle header-button header-button-primary" type="button" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                                <i class="fas fa-user-circle me-1"></i>
-                                {{ current_user.username }}
-                            </button>
-                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
-                                <li><a class="dropdown-item" href="#"><i class="fas fa-user me-2"></i>Profil</a></li>
-                                <li><a class="dropdown-item" href="{{ url_for('reservations.show_reservations') }}"><i class="fas fa-calendar-check me-2"></i>Mes Réservations</a></li>
-                                <li><a class="dropdown-item" href="#"><i class="fas fa-heart me-2"></i>Favoris</a></li>
-                                <li><hr class="dropdown-divider"></li>
-                                <li>
-                                    <button id="logoutButton" class="dropdown-item text-danger">
-                                        <i class="fas fa-sign-out-alt me-2"></i>Déconnexion
-                                    </button>
-                                </li>
-                            </ul>
-                     </div>
-                    {% else %}
-                        <a href="#" class="btn btn-outline-light me-2 header-button header-button-primary auth-btn login-btn" id="login-button">Commencer</a>
-                        <a href="#" class="btn btn-light header-button header-button-signup auth-btn register-btn" id="authButton">S'inscrire</a>
-                    {% endif %}
+                    <a href="https://goseminary.com/login" class="btn btn-outline-light me-2 header-button header-button-primary">Connexion</a>
+                    <a href="https://goseminary.com/register" class="btn btn-light header-button header-button-signup">S'inscrire</a>
                 </div>
             </div>
         </div>
