@@ -1,0 +1,18 @@
+# Dépendances pour Seminary Blog Auto-Publisher
+# IA et génération de contenu
+openai>=1.0.0
+
+# Traitement d'images
+Pillow>=10.0.0
+requests>=2.31.0
+
+# Validation SEO et HTML
+beautifulsoup4>=4.12.0
+lxml>=4.9.0
+
+# Détection d'encodage
+chardet>=5.2.0
+
+# Utilitaires
+python-dateutil>=2.8.0
+pathlib2>=2.3.0 
