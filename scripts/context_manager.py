@@ -210,21 +210,33 @@ class ContextManager:
                 'Content-Type': 'application/json'
             }
             
+            # Format officiel Chutes AI chat/completions
             payload = {
-                'prompt': prompt,
+                'model': 'deepseek-ai/DeepSeek-R1-0528',
+                'messages': [
+                    {
+                        'role': 'user',
+                        'content': prompt
+                    }
+                ],
+                'stream': False,
                 'max_tokens': max_words * 2,  # Marge de sécurité
-                'temperature': 0.3,  # Résumé précis, peu créatif
-                'stop': ['\n\n', 'Article suivant:', 'En conclusion:']
+                'temperature': 0.3  # Résumé précis, peu créatif
             }
             
-            # Note: URL d'API Chutes AI - à adapter selon la documentation
-            api_url = "https://api.chutes.ai/v1/generate"  # URL exemple
+            # URL officielle Chutes AI
+            api_url = "https://llm.chutes.ai/v1/chat/completions"
             
             response = requests.post(api_url, headers=headers, json=payload, timeout=30)
             response.raise_for_status()
             
             result = response.json()
-            summary = result.get('generated_text', '').strip()
+            
+            # Format de réponse OpenAI-compatible
+            if 'choices' in result and len(result['choices']) > 0:
+                summary = result['choices'][0]['message']['content'].strip()
+            else:
+                summary = ''
             
             # Nettoyer et valider le résumé
             if summary:

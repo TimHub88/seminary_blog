@@ -57,7 +57,8 @@ class ArticleGenerator:
         self.generation_config = {
             'max_retries': 5,
             'retry_delay': 30,  # secondes
-            'chutes_api_url': 'https://api.chutes.ai/v1/generate',  # URL exemple
+            'chutes_api_url': 'https://llm.chutes.ai/v1/chat/completions',  # URL officielle Chutes AI
+            'chutes_model': 'deepseek-ai/DeepSeek-R1-0528',  # Modèle officiel Chutes AI
             'min_article_words': 800,
             'max_article_words': 2000,
             'target_word_count': 1200,
@@ -167,7 +168,7 @@ class ArticleGenerator:
     
     def call_chutes_api(self, prompt: str, max_tokens: int = 2000, temperature: float = 0.7) -> Optional[str]:
         """
-        Appelle l'API Chutes AI avec retry automatique.
+        Appelle l'API Chutes AI avec le format officiel chat/completions.
         
         Args:
             prompt: Prompt à envoyer
@@ -182,16 +183,24 @@ class ArticleGenerator:
             'Content-Type': 'application/json'
         }
         
+        # Format officiel Chutes AI chat/completions
         payload = {
-            'prompt': prompt,
+            'model': self.generation_config['chutes_model'],
+            'messages': [
+                {
+                    'role': 'user',
+                    'content': prompt
+                }
+            ],
+            'stream': False,  # Mode non-streaming pour simplifier
             'max_tokens': max_tokens,
-            'temperature': temperature,
-            'stop': ['Article suivant:', 'En résumé:', '\n\n---']
+            'temperature': temperature
         }
         
         for attempt in range(self.generation_config['max_retries']):
             try:
                 logger.info(f"Appel Chutes AI (tentative {attempt + 1}/{self.generation_config['max_retries']})")
+                logger.info(f"Modèle: {self.generation_config['chutes_model']}")
                 
                 response = requests.post(
                     self.generation_config['chutes_api_url'],
@@ -203,13 +212,18 @@ class ArticleGenerator:
                 response.raise_for_status()
                 result = response.json()
                 
-                generated_text = result.get('generated_text', '').strip()
-                
-                if generated_text:
-                    logger.info(f"Génération réussie: {len(generated_text)} caractères")
-                    return generated_text
+                # Format de réponse OpenAI-compatible
+                if 'choices' in result and len(result['choices']) > 0:
+                    generated_text = result['choices'][0]['message']['content'].strip()
+                    
+                    if generated_text:
+                        logger.info(f"Génération réussie: {len(generated_text)} caractères")
+                        return generated_text
+                    else:
+                        logger.warning("Texte généré vide")
                 else:
-                    logger.warning("Texte généré vide")
+                    logger.warning("Format de réponse inattendu")
+                    logger.debug(f"Réponse reçue: {result}")
                     
             except requests.exceptions.RequestException as e:
                 logger.error(f"Erreur API (tentative {attempt + 1}): {e}")
@@ -218,6 +232,7 @@ class ArticleGenerator:
                     time.sleep(self.generation_config['retry_delay'])
             except Exception as e:
                 logger.error(f"Erreur inattendue: {e}")
+                logger.debug(f"Détails de l'erreur: {str(e)}")
                 break
         
         logger.error("Échec de génération après tous les retries")
