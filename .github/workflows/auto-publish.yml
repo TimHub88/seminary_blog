@@ -28,10 +28,18 @@ jobs:
   generate-and-publish:
     runs-on: ubuntu-latest
     
+    # 🔐 Permissions nécessaires pour le git push
+    permissions:
+      contents: write    # Pour lire/écrire le code
+      actions: read      # Pour lire les actions
+      pages: write       # Pour GitHub Pages si activé
+      id-token: write    # Pour l'authentification
+    
     steps:
     - name: 🔄 Checkout Repository
       uses: actions/checkout@v4
       with:
+        token: ${{ secrets.GITHUB_TOKEN }}  # Token explicite
         fetch-depth: 0  # Récupérer tout l'historique pour Git
     
     - name: 🐍 Setup Python 3.11
@@ -185,9 +193,13 @@ jobs:
     - name: 🔄 Commit and Push Changes
       if: steps.check_articles.outputs.skip_generation == 'false' && steps.generate_article.outputs.generation_success == 'true'
       run: |
-        # Configuration Git
+        # Configuration Git avec authentification renforcée
         git config --global user.name 'Seminary Blog Bot'
         git config --global user.email 'blog-bot@goseminary.com'
+        
+        # Vérifier les permissions git
+        echo "🔍 Vérification des permissions..."
+        git remote -v
         
         # Ajouter les fichiers modifiés
         git add articles/ images/ data/ index.html
@@ -200,8 +212,28 @@ jobs:
           GENERATED_FILE="${{ steps.generate_article.outputs.generated_file }}"
           COMMIT_MSG="🤖 Auto-publish: $(basename "$GENERATED_FILE" .html)"
           
+          echo "💾 Commit en cours..."
           git commit -m "$COMMIT_MSG"
-          git push origin main
+          
+          # Push avec retry et diagnostic
+          echo "🚀 Push vers origin/main..."
+          
+          # Tentative 1: Push normal
+          if git push origin main; then
+            echo "✅ Push réussi!"
+          else
+            echo "⚠️ Push échoué, diagnostic en cours..."
+            
+            # Afficher les informations de debug
+            echo "🔍 Token présent: $([[ -n "$GITHUB_TOKEN" ]] && echo "OUI" || echo "NON")"
+            echo "🔍 Remote URL: $(git remote get-url origin)"
+            echo "🔍 Branche actuelle: $(git branch --show-current)"
+            echo "🔍 Statut git: $(git status --porcelain)"
+            
+            # Tentative 2: Avec force (DANGEREUX, seulement si nécessaire)
+            echo "🔄 Tentative avec authentification explicite..."
+            git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git main
+          fi
           
           echo "✅ Changements commitées et pushées"
           echo "📄 Fichier: $GENERATED_FILE"
