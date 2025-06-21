@@ -43,13 +43,35 @@ def update_index_html():
                 with open(html_file, 'r', encoding=encoding) as f:
                     content = f.read()
                 
-                # Extraire le titre
-                title_match = re.search(r'<h1[^>]*>(.*?)</h1>', content, re.IGNORECASE)
-                title = title_match.group(1) if title_match else title_slug.replace('-', ' ').title()
+                # Extraire le titre avec fallback intelligent
+                title_match = re.search(r'<h1[^>]*>(.*?)</h1>', content, re.IGNORECASE | re.DOTALL)
+                title = ''
+                if title_match and title_match.group(1).strip():
+                    title = title_match.group(1).strip()
+                else:
+                    # Fallback: extraire depuis <title> si h1 vide
+                    title_tag = re.search(r'<title[^>]*>(.*?)</title>', content, re.IGNORECASE)
+                    if title_tag and title_tag.group(1).strip():
+                        title = title_tag.group(1).strip()
+                    else:
+                        # Dernier fallback: générer depuis nom fichier
+                        title = title_slug.replace('-', ' ').title()
+                        if title.endswith(' Html'):
+                            title = title[:-5]  # Supprimer " Html" final
                 
-                # Extraire la description
+                # Extraire la description avec fallback
                 desc_match = re.search(r'<meta name="description" content="(.*?)"', content)
-                description = desc_match.group(1) if desc_match else 'Article sur les séminaires dans les Vosges'
+                if desc_match and desc_match.group(1).strip():
+                    description = desc_match.group(1).strip()
+                else:
+                    # Fallback: premières lignes du contenu
+                    content_match = re.search(r'<div[^>]*class="article-content"[^>]*>(.*?)</div>', content, re.IGNORECASE | re.DOTALL)
+                    if content_match:
+                        text_content = re.sub(r'<[^>]+>', '', content_match.group(1))
+                        text_content = ' '.join(text_content.split())  # Nettoyer espaces
+                        description = text_content[:150] + '...' if len(text_content) > 150 else text_content
+                    else:
+                        description = f'Article sur les séminaires dans les Vosges - {title}'
                 
                 articles.append({
                     'filename': html_file.name,
