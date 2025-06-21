@@ -20,9 +20,10 @@ on:
         default: 'false'
         type: boolean
 
-env:
-  CHUTES_API_KEY: ${{ secrets.CHUTES_API_KEY }}
-  UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}
+      env:
+        CHUTES_API_KEY: ${{ secrets.CHUTES_API_KEY }}
+        UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}
+        UNSPLASH_SECRET_KEY: ${{ secrets.UNSPLASH_SECRET_KEY }}
 
 jobs:
   generate-and-publish:
@@ -111,9 +112,10 @@ jobs:
         fi
         
         # Générer l'article avec gestion d'erreur
-        if python scripts/article_generator.py \
-           --chutes-api-key "$CHUTES_API_KEY" \
-           --unsplash-api-key "$UNSPLASH_ACCESS_KEY" > generation.log 2>&1; then
+                if python scripts/article_generator.py \
+          --chutes-api-key "$CHUTES_API_KEY" \
+          --unsplash-access-key "$UNSPLASH_ACCESS_KEY" \
+          --unsplash-secret-key "$UNSPLASH_SECRET_KEY" > generation.log 2>&1; then
           
           # Récupérer le nom du fichier généré
           GENERATED_FILE=$(grep "Article sauvegardé:" generation.log | tail -1 | sed 's/.*: //')

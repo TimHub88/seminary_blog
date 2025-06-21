@@ -36,21 +36,23 @@ logger = logging.getLogger(__name__)
 class ArticleGenerator:
     """Générateur d'articles complet avec pipeline 4-pass."""
     
-    def __init__(self, chutes_api_key: str, unsplash_api_key: Optional[str] = None):
+    def __init__(self, chutes_api_key: str, unsplash_access_key: Optional[str] = None, unsplash_secret_key: Optional[str] = None):
         """
         Initialise le générateur d'articles.
         
         Args:
             chutes_api_key: Clé API Chutes AI
-            unsplash_api_key: Clé API Unsplash (optionnel)
+            unsplash_access_key: Clé d'accès Unsplash API
+            unsplash_secret_key: Clé secrète Unsplash API (pour production)
         """
         self.chutes_api_key = chutes_api_key
-        self.unsplash_api_key = unsplash_api_key
+        self.unsplash_access_key = unsplash_access_key
+        self.unsplash_secret_key = unsplash_secret_key
         
         # Initialiser les modules
         self.context_manager = ContextManager()
         self.seo_validator = SEOValidator()
-        self.image_handler = ImageHandler(unsplash_api_key)
+        self.image_handler = ImageHandler(unsplash_access_key, unsplash_secret_key)
         self.seminary_integrator = SeminaryIntegrator()
         
         # Configuration de génération - Optimisée pour DeepSeek-R1
@@ -447,25 +449,13 @@ class ArticleGenerator:
         
         logger.info(f"Liens Seminary ajoutés: {seminary_result['links_added']}")
         
-        # Ajouter une image si disponible
-        if self.unsplash_api_key:
-            try:
-                image_suggestions = self.image_handler.suggest_images_for_article(
-                    article_data['content'],
-                    article_data['metadata'].get('title', '')
-                )
-                
-                if image_suggestions:
-                    best_image = image_suggestions[0]
-                    image_path = self.image_handler.download_image(best_image)
-                    
-                    if image_path:
-                        # Injecter l'image dans le HTML
-                        final_html = self._inject_featured_image(final_html, image_path, best_image)
-                        logger.info(f"Image ajoutée: {image_path}")
-                
-            except Exception as e:
-                logger.error(f"Erreur lors de l'ajout d'image: {e}")
+        # Intégrer images et illustrations CSS/SVG
+        try:
+            visual_integration = self._integrate_visual_elements(final_html, article_data)
+            final_html = visual_integration['html']
+            logger.info(f"Éléments visuels intégrés: {visual_integration['summary']}")
+        except Exception as e:
+            logger.error(f"Erreur lors de l'intégration visuelle: {e}")
         
         return {
             'final_html': final_html,
@@ -512,8 +502,115 @@ class ArticleGenerator:
         
         return metadata
     
+    def _integrate_visual_elements(self, html: str, article_data: Dict) -> Dict:
+        """Intègre images Unsplash et illustrations CSS/SVG dans l'article."""
+        from bs4 import BeautifulSoup
+        
+        soup = BeautifulSoup(html, 'html.parser')
+        visual_elements_added = []
+        
+        # 1. Ajouter une image Unsplash si disponible
+        if self.unsplash_access_key:
+            try:
+                # Afficher le statut de configuration
+                config_status = self.image_handler.get_unsplash_config_status()
+                logger.info(f"Configuration Unsplash: {config_status['demo_mode'] and 'Démo' or 'Production'} - {config_status['requests_remaining']} requêtes restantes")
+                
+                image_suggestions = self.image_handler.suggest_images_for_article(
+                    article_data['content'],
+                    article_data['metadata'].get('title', '')
+                )
+                
+                if image_suggestions:
+                    best_image = image_suggestions[0]
+                    image_path = self.image_handler.download_image(best_image)
+                    
+                    if image_path:
+                        # Créer la balise image
+                        img_tag = soup.new_tag(
+                            'img',
+                            src=f"./images/{Path(image_path).name}",
+                            alt=best_image.get('suggested_alt_text', 'Séminaire d\'entreprise Seminary'),
+                            title=best_image.get('suggested_title', 'Seminary'),
+                            style="width: 100%; max-width: 800px; height: auto; margin: 20px 0; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);"
+                        )
+                        
+                        # Insérer après le premier paragraphe
+                        content_div = soup.find('div', class_='article-content')
+                        if content_div:
+                            first_p = content_div.find('p')
+                            if first_p:
+                                first_p.insert_after(img_tag)
+                                visual_elements_added.append(f"Image Unsplash: {best_image.get('description', 'N/A')[:50]}...")
+                
+            except Exception as e:
+                logger.error(f"Erreur lors de l'ajout d'image Unsplash: {e}")
+        
+        # 2. Ajouter des illustrations CSS/SVG automatiquement
+        try:
+            content_text = article_data['content']
+            title = article_data['metadata'].get('title', '')
+            
+            # Suggérer des illustrations appropriées
+            illustration_suggestions = self.image_handler.suggest_illustrations_for_article(content_text, title)
+            
+            content_div = soup.find('div', class_='article-content')
+            if content_div and illustration_suggestions:
+                
+                # Ajouter 1-2 illustrations selon la longueur du contenu
+                word_count = article_data.get('word_count', 0)
+                max_illustrations = 2 if word_count > 500 else 1
+                
+                for i, suggestion in enumerate(illustration_suggestions[:max_illustrations]):
+                    try:
+                        # Générer l'illustration CSS/SVG
+                        illustration_html = self.image_handler.generate_css_illustration(
+                            suggestion['type'],
+                            'professional',
+                            **suggestion
+                        )
+                        
+                        # Créer un conteneur pour l'illustration
+                        illustration_div = soup.new_tag('div', class_='visual-illustration')
+                        illustration_div.string = illustration_html
+                        
+                        # Insérer à des positions stratégiques
+                        paragraphs = content_div.find_all('p')
+                        if len(paragraphs) > 2:
+                            # Insérer après le paragraphe au milieu
+                            middle_p = paragraphs[len(paragraphs) // 2]
+                            middle_p.insert_after(illustration_div)
+                            visual_elements_added.append(f"Illustration {suggestion['type']}: {suggestion['title']}")
+                        
+                    except Exception as e:
+                        logger.error(f"Erreur lors de l'ajout d'illustration {suggestion['type']}: {e}")
+                
+        except Exception as e:
+            logger.error(f"Erreur lors de l'ajout d'illustrations CSS: {e}")
+        
+        # 3. Optimiser la structure visuelle
+        try:
+            # Ajouter des classes CSS pour le responsive
+            for img in soup.find_all('img'):
+                current_style = img.get('style', '')
+                if 'responsive' not in current_style:
+                    img['style'] = current_style + ' max-width: 100%; height: auto;'
+            
+            # Ajouter des espacements appropriés
+            for illustration in soup.find_all('div', class_='visual-illustration'):
+                illustration['style'] = 'margin: 2rem 0;'
+                
+        except Exception as e:
+            logger.error(f"Erreur lors de l'optimisation visuelle: {e}")
+        
+        return {
+            'html': str(soup),
+            'elements_added': visual_elements_added,
+            'summary': f"{len(visual_elements_added)} éléments visuels ajoutés"
+        }
+    
     def _inject_featured_image(self, html: str, image_path: str, image_info: Dict) -> str:
-        """Injecte une image mise en avant dans l'article."""
+        """Injecte une image mise en avant dans l'article (méthode legacy)."""
         from bs4 import BeautifulSoup
         
         soup = BeautifulSoup(html, 'html.parser')
@@ -630,7 +727,8 @@ def main():
     """Point d'entrée principal pour l'exécution standalone."""
     parser = argparse.ArgumentParser(description="Article Generator - Seminary Blog Pipeline")
     parser.add_argument('--chutes-api-key', required=True, help='Clé API Chutes AI')
-    parser.add_argument('--unsplash-api-key', help='Clé API Unsplash (optionnel)')
+    parser.add_argument('--unsplash-access-key', help='Clé d\'accès Unsplash API (optionnel)')
+    parser.add_argument('--unsplash-secret-key', help='Clé secrète Unsplash API (pour production, optionnel)')
     parser.add_argument('--update-context', action='store_true', help='Mettre à jour le contexte uniquement')
     parser.add_argument('--dry-run', action='store_true', help='Test sans génération réelle')
     
@@ -646,7 +744,7 @@ def main():
     if args.dry_run:
         print("🧪 MODE TEST - Pas de génération réelle")
         # Test de connexion API
-        generator = ArticleGenerator(args.chutes_api_key, args.unsplash_api_key)
+        generator = ArticleGenerator(args.chutes_api_key, args.unsplash_access_key, args.unsplash_secret_key)
         test_response = generator.call_chutes_api("Test de connexion", max_tokens=10)
         if test_response:
             print("✅ Connexion API réussie")
@@ -655,7 +753,7 @@ def main():
         return
     
     # Génération normale
-    generator = ArticleGenerator(args.chutes_api_key, args.unsplash_api_key)
+    generator = ArticleGenerator(args.chutes_api_key, args.unsplash_access_key, args.unsplash_secret_key)
     
     result_path = generator.generate_full_article()
     
