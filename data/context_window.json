@@ -1,5 +1,20 @@
 {
-    "last_articles": [],
-    "last_updated": null,
+    "last_articles": [
+        {
+            "filename": "2025-06-21-les-vosges-votre-atout-nature-pour-des-séminaires-.html",
+            "title": "",
+            "date": "2025-06-21",
+            "summary": "Contenu vide - impossible de générer un résumé.",
+            "description": "Et si votre prochain séminaire d'entreprise devenait une véritable bouffée d’air frais, au sens propre comme au figuré ? Loin de l’agitation urbaine et des s..."
+        },
+        {
+            "filename": "2025-01-21-seminaires-team-building-vosges.html",
+            "title": "Séminaires Team Building dans les Vosges : Guide Complet 2025",
+            "date": "2025-01-21",
+            "summary": "L'article est bien structuré : il présente d'abord les atouts des Vosges (nature, accessibilité), puis liste 5 activités phares (randonnée, radeaux, etc.), et termine par des conseils logistiques. Le chiffre clé de 85% d'amélioration de cohésion est aussi important.\nJe dois condenser tout ça en gardant l'essentiel :\n- L'environnement stimulant des Vosges comme cadre unique\n- Les 5 activités emblématiques sans les détails superflus\n- Les conseils pratiques (durée, budget, taille de groupe)\n- La statistique percutante\nAttention à ne pas",
+            "description": "Découvrez comment organiser des séminaires team building exceptionnels dans les Vosges. Guide complet avec activités, lieux et conseils pratiques pour renforcer votre équipe."
+        }
+    ],
+    "last_updated": "2025-06-21T20:58:06.278147",
     "version": "1.0.0"
-} 
+}
