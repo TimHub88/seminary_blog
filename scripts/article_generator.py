@@ -28,6 +28,7 @@ from context_manager import ContextManager
 from seo_validator import SEOValidator
 from image_handler import ImageHandler
 from seminary_integrator import SeminaryIntegrator
+from fallback_generator import create_fallback_article
 
 # Configuration du logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -213,6 +214,12 @@ class ArticleGenerator:
         Returns:
             Réponse générée ou None si échec
         """
+        # VALIDATION CRITIQUE: Vérifier la clé API
+        if not self.chutes_api_key or self.chutes_api_key.strip() == "":
+            logger.error("❌ ERREUR CRITIQUE: CHUTES_API_KEY non définie ou vide")
+            logger.error("   Le workflow GitHub Actions doit définir cette variable d'environnement")
+            raise ValueError("CHUTES_API_KEY manquante - impossible de continuer")
+        
         headers = {
             'Authorization': f'Bearer {self.chutes_api_key}',
             'Content-Type': 'application/json'
@@ -236,6 +243,7 @@ class ArticleGenerator:
             try:
                 logger.info(f"Appel Chutes AI (tentative {attempt + 1}/{self.generation_config['max_retries']})")
                 logger.info(f"Modèle: {self.generation_config['chutes_model']}")
+                logger.info(f"Clé API: {self.chutes_api_key[:10]}...")
                 
                 response = requests.post(
                     self.generation_config['chutes_api_url'],
@@ -244,35 +252,70 @@ class ArticleGenerator:
                     timeout=self.generation_config['api_timeout']  # 3 minutes pour DeepSeek-R1
                 )
                 
+                logger.info(f"Status Code API: {response.status_code}")
+                
+                # VALIDATION CRITIQUE: Vérifier le status code
+                if response.status_code == 401:
+                    logger.error("❌ ERREUR 401: Clé API invalide ou expirée")
+                    logger.error("   Vérifiez la variable CHUTES_API_KEY dans GitHub Secrets")
+                    raise ValueError("Authentification API échouée")
+                elif response.status_code == 429:
+                    logger.error("❌ ERREUR 429: Limite de taux API atteinte")
+                    logger.info("   Attente plus longue avant retry...")
+                    time.sleep(60)  # Attendre 1 minute pour les limites de taux
+                    continue
+                
                 response.raise_for_status()
                 result = response.json()
                 
-                # Format de réponse OpenAI-compatible
-                if 'choices' in result and len(result['choices']) > 0:
-                    raw_text = result['choices'][0]['message']['content'].strip()
+                # VALIDATION CRITIQUE: Vérifier le format de réponse
+                if 'choices' not in result:
+                    logger.error(f"❌ Format de réponse API invalide: {result}")
+                    continue
                     
-                    if raw_text:
-                        # Extraire le contenu final du modèle DeepSeek-R1
-                        generated_text = self._extract_final_content_from_deepseek(raw_text)
-                        logger.info(f"Génération réussie: {len(generated_text)} caractères (extrait de {len(raw_text)} caractères bruts)")
-                        return generated_text
-                    else:
-                        logger.warning("Texte généré vide")
-                else:
-                    logger.warning("Format de réponse inattendu")
-                    logger.debug(f"Réponse reçue: {result}")
+                if len(result['choices']) == 0:
+                    logger.error("❌ Aucun choix dans la réponse API")
+                    continue
+                
+                raw_text = result['choices'][0]['message']['content'].strip()
+                
+                # VALIDATION CRITIQUE: Vérifier que le contenu n'est pas vide
+                if not raw_text or len(raw_text) < 50:
+                    logger.error(f"❌ Contenu généré trop court ou vide: {len(raw_text) if raw_text else 0} caractères")
+                    continue
+                
+                # Extraire le contenu final du modèle DeepSeek-R1
+                generated_text = self._extract_final_content_from_deepseek(raw_text)
+                
+                # VALIDATION FINALE: Vérifier que l'extraction a réussi
+                if not generated_text or len(generated_text) < 100:
+                    logger.error(f"❌ Extraction DeepSeek échouée: {len(generated_text) if generated_text else 0} caractères")
+                    logger.debug(f"Contenu brut: {raw_text[:200]}...")
+                    continue
+                
+                # VALIDATION HTML: Vérifier la présence de balises HTML
+                if not ('<h1>' in generated_text or '<h2>' in generated_text or '<p>' in generated_text):
+                    logger.error("❌ Contenu généré ne contient pas de HTML valide")
+                    logger.debug(f"Contenu: {generated_text[:200]}...")
+                    continue
+                
+                logger.info(f"✅ Génération réussie: {len(generated_text)} caractères (extrait de {len(raw_text)} caractères bruts)")
+                return generated_text
                     
             except requests.exceptions.RequestException as e:
-                logger.error(f"Erreur API (tentative {attempt + 1}): {e}")
+                logger.error(f"❌ Erreur API (tentative {attempt + 1}): {e}")
+                if hasattr(e, 'response') and e.response is not None:
+                    logger.error(f"   Réponse HTTP: {e.response.text}")
                 if attempt < self.generation_config['max_retries'] - 1:
-                    logger.info(f"Attente de {self.generation_config['retry_delay']}s avant retry...")
+                    logger.info(f"   Attente de {self.generation_config['retry_delay']}s avant retry...")
                     time.sleep(self.generation_config['retry_delay'])
             except Exception as e:
-                logger.error(f"Erreur inattendue: {e}")
+                logger.error(f"❌ Erreur inattendue: {e}")
                 logger.debug(f"Détails de l'erreur: {str(e)}")
                 break
         
-        logger.error("Échec de génération après tous les retries")
+        logger.error("❌ ÉCHEC CRITIQUE: Impossible de générer du contenu après tous les retries")
+        logger.error("   Cela empêchera la création d'articles vides")
         return None
     
     def pass1_creative_generation(self, context: str) -> Optional[Dict]:
@@ -679,48 +722,140 @@ class ArticleGenerator:
         logger.info("🚀 DÉBUT DE GÉNÉRATION D'ARTICLE - PIPELINE 4-PASS")
         
         try:
+            # VALIDATION PRÉALABLE: Vérifier la clé API
+            if not self.chutes_api_key or self.chutes_api_key.strip() == "":
+                logger.error("❌ ARRÊT IMMÉDIAT: CHUTES_API_KEY non définie")
+                logger.error("   Impossible de continuer sans clé API valide")
+                raise ValueError("CHUTES_API_KEY manquante")
+            
             # Mettre à jour le contexte
             context = self.context_manager.get_context_for_ai()
             
             # Pass 1: Génération créative
+            logger.info("=== PASS 1: GÉNÉRATION CRÉATIVE ===")
             article_data = self.pass1_creative_generation(context)
             if not article_data:
-                logger.error("Échec du Pass 1 - Génération créative")
+                logger.error("❌ ÉCHEC CRITIQUE: Pass 1 - Génération créative")
+                logger.error("   Aucun article ne sera créé pour éviter les fichiers vides")
                 return None
             
+            # VALIDATION PASS 1: Vérifier la qualité du contenu généré
+            content = article_data.get('content', '')
+            word_count = article_data.get('word_count', 0)
+            
+            if not content or len(content.strip()) < 200:
+                logger.error(f"❌ ÉCHEC CRITIQUE: Contenu Pass 1 trop court ({len(content)} caractères)")
+                logger.error("   Aucun article ne sera créé pour éviter les fichiers vides")
+                return None
+            
+            if word_count < 100:
+                logger.error(f"❌ ÉCHEC CRITIQUE: Nombre de mots insuffisant ({word_count} mots)")
+                logger.error("   Aucun article ne sera créé pour éviter les fichiers vides")
+                return None
+            
+            # Vérifier la présence de métadonnées essentielles
+            metadata = article_data.get('metadata', {})
+            if not metadata.get('title') or len(metadata.get('title', '').strip()) < 10:
+                logger.error("❌ ÉCHEC CRITIQUE: Titre manquant ou trop court")
+                logger.error("   Aucun article ne sera créé pour éviter les fichiers vides")
+                return None
+            
+            logger.info(f"✅ Pass 1 validé: {word_count} mots, titre: '{metadata.get('title', '')[:50]}...'")
+            
             # Pass 2: Audit SEO
+            logger.info("=== PASS 2: AUDIT SEO ===")
             seo_audit = self.pass2_seo_audit(article_data)
             
             # Pass 3: Auto-amélioration
+            logger.info("=== PASS 3: AUTO-AMÉLIORATION ===")
             improved_article = self.pass3_auto_improvement(article_data, seo_audit)
             if not improved_article:
-                logger.error("Échec du Pass 3 - Auto-amélioration")
+                logger.error("❌ ÉCHEC CRITIQUE: Pass 3 - Auto-amélioration")
+                logger.error("   Utilisation de l'article original du Pass 1")
+                improved_article = article_data  # Fallback sur l'article original
+            
+            # VALIDATION FINALE: Vérifier l'article final
+            final_content = improved_article.get('content', '')
+            final_word_count = improved_article.get('word_count', 0)
+            
+            if not final_content or len(final_content.strip()) < 300:
+                logger.error(f"❌ ÉCHEC CRITIQUE: Contenu final trop court ({len(final_content)} caractères)")
+                logger.error("   Aucun article ne sera créé pour éviter les fichiers vides")
                 return None
             
+            if final_word_count < 150:
+                logger.error(f"❌ ÉCHEC CRITIQUE: Article final trop court ({final_word_count} mots)")
+                logger.error("   Aucun article ne sera créé pour éviter les fichiers vides")
+                return None
+            
+            logger.info(f"✅ Article final validé: {final_word_count} mots")
+            
             # Pass 4: Intégration Seminary
+            logger.info("=== PASS 4: INTÉGRATION SEMINARY ===")
             final_result = self.pass4_seminary_integration(improved_article)
+            
+            # VALIDATION HTML FINALE: Vérifier le HTML complet
+            final_html = final_result.get('final_html', '')
+            if not final_html or len(final_html.strip()) < 500:
+                logger.error(f"❌ ÉCHEC CRITIQUE: HTML final trop court ({len(final_html)} caractères)")
+                logger.error("   Aucun article ne sera créé pour éviter les fichiers vides")
+                return None
+            
+            # Vérifier la présence de balises HTML essentielles
+            required_tags = ['<html>', '<head>', '<title>', '<body>', '<h1>']
+            missing_tags = [tag for tag in required_tags if tag not in final_html]
+            if missing_tags:
+                logger.error(f"❌ ÉCHEC CRITIQUE: Balises HTML manquantes: {missing_tags}")
+                logger.error("   Aucun article ne sera créé pour éviter les fichiers vides")
+                return None
+            
+            logger.info("✅ HTML final validé - Structure complète détectée")
             
             # Sauvegarder l'article
             file_path = self.save_article(final_result)
+            
+            # VALIDATION POST-SAUVEGARDE: Vérifier que le fichier n'est pas vide
+            if os.path.exists(file_path):
+                file_size = os.path.getsize(file_path)
+                if file_size < 1000:  # Moins de 1KB = probablement vide
+                    logger.error(f"❌ ÉCHEC CRITIQUE: Fichier sauvegardé trop petit ({file_size} bytes)")
+                    logger.error("   Suppression du fichier vide")
+                    os.remove(file_path)
+                    return None
+                logger.info(f"✅ Fichier validé: {file_size} bytes")
             
             # Mettre à jour le contexte avec le nouvel article
             self.context_manager.update_context(self.chutes_api_key)
             
             # Statistiques finales
             duration = time.time() - start_time
-            word_count = improved_article['word_count']
             
-            logger.info(f"✅ GÉNÉRATION TERMINÉE")
+            logger.info(f"✅ GÉNÉRATION TERMINÉE AVEC SUCCÈS")
             logger.info(f"📄 Fichier: {file_path}")
-            logger.info(f"📊 Mots: {word_count}")
+            logger.info(f"📊 Mots: {final_word_count}")
             logger.info(f"⏱️  Durée: {duration:.1f}s")
             logger.info(f"🔗 Liens Seminary: {final_result['seminary_integration']['links_added']}")
             
             return file_path
             
         except Exception as e:
-            logger.error(f"Erreur critique dans le pipeline: {e}")
-            return None
+            logger.error(f"❌ ERREUR CRITIQUE DANS LE PIPELINE: {e}")
+            logger.error("   Tentative de création d'un article de fallback...")
+            
+            try:
+                # Créer un article de fallback pour éviter l'échec complet
+                fallback_path = create_fallback_article()
+                logger.info(f"✅ Article de fallback créé avec succès: {fallback_path}")
+                
+                # Mettre à jour le contexte avec l'article de fallback
+                self.context_manager.update_context(self.chutes_api_key)
+                
+                return fallback_path
+                
+            except Exception as fallback_error:
+                logger.error(f"❌ ÉCHEC TOTAL: Impossible de créer même un article de fallback: {fallback_error}")
+                logger.error("   Aucun article ne sera créé")
+                return None
 
 
 def main():
