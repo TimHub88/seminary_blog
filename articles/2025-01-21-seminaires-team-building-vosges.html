@@ -17,8 +17,7 @@
     
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer">
+    <!-- PLUS DE FONT AWESOME - Icônes SVG inline uniquement -->
     
     <style>
         * {
@@ -108,6 +107,20 @@
             color: white;
             transform: translateY(-2px);
         }
+        
+        /* ICÔNES SVG INLINE - Solution radicale 100% fiable */
+        .svg-icon {
+            display: inline-block;
+            width: 1em;
+            height: 1em;
+            fill: currentColor;
+            vertical-align: -0.125em;
+            transition: all 0.3s ease;
+        }
+        
+        .svg-icon:hover {
+            transform: scale(1.1);
+        }
     </style>
 </head>
 
@@ -122,10 +135,15 @@
                 <div class="col-lg-8 mx-auto text-center">
                     <h1 class="article-title">Séminaires Team Building dans les Vosges : Guide Complet 2025</h1>
                     <div class="article-meta">
-                        <i class="fas fa-calendar me-2"></i>
+                        <svg class="svg-icon me-2" viewBox="0 0 24 24">
+                            <path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"/>
+                        </svg>
                         21 janvier 2025
                         <span class="mx-2">•</span>
-                        <i class="fas fa-clock me-2"></i>
+                        <svg class="svg-icon me-2" viewBox="0 0 24 24">
+                            <path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8z"/>
+                            <path d="M12.5 7H11v6l5.25 3.15.75-1.23-4.5-2.67z"/>
+                        </svg>
                         8 min de lecture
                     </div>
                 </div>
@@ -138,7 +156,9 @@
         <div class="row">
             <div class="col-lg-10 mx-auto">
                 <a href="../index.html" class="back-button mb-4">
-                    <i class="fas fa-arrow-left"></i>
+                    <svg class="svg-icon me-2" viewBox="0 0 24 24">
+                        <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
+                    </svg>
                     Retour au blog
                 </a>
                 
@@ -157,7 +177,12 @@
                     </ul>
 
                     <div class="highlight-box">
-                        <h3><i class="fas fa-lightbulb me-2"></i>Conseil d'expert</h3>
+                        <h3>
+                            <svg class="svg-icon me-2" viewBox="0 0 24 24">
+                                <path d="M9 21c0 .5.4 1 1 1h4c.6 0 1-.5 1-1v-1H9v1zm3-19C8.1 2 5 5.1 5 9c0 2.4 1.2 4.5 3 5.7V17c0 .5.4 1 1 1h6c.6 0 1-.5 1-1v-2.3c1.8-1.3 3-3.4 3-5.7 0-3.9-3.1-7-7-7z"/>
+                            </svg>
+                            Conseil d'expert
+                        </h3>
                         <p class="mb-0">Planifiez votre séminaire entre mai et octobre pour profiter pleinement des activités extérieures. Les Vosges offrent également de magnifiques panoramas hivernaux pour des séminaires cocooning.</p>
                     </div>
 
@@ -195,7 +220,12 @@
                     <p>Prévoyez des équipements adaptés selon la saison et informez vos participants des conditions météorologiques attendues.</p>
 
                     <div class="highlight-box">
-                        <h3><i class="fas fa-star me-2"></i>Statistique clé</h3>
+                        <h3>
+                            <svg class="svg-icon me-2" viewBox="0 0 24 24">
+                                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.77 5.82 22 7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                            </svg>
+                            Statistique clé
+                        </h3>
                         <p class="mb-0">85% des entreprises qui organisent des séminaires dans les Vosges constatent une amélioration significative de la cohésion d'équipe dans les 3 mois suivants.</p>
                     </div>
 
@@ -227,7 +257,9 @@
                 
                 <div class="text-center mt-4">
                     <a href="../index.html" class="back-button">
-                        <i class="fas fa-arrow-left"></i>
+                        <svg class="svg-icon me-2" viewBox="0 0 24 24">
+                            <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
+                        </svg>
                         Retour au blog
                     </a>
                 </div>
