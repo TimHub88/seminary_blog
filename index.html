@@ -17,10 +17,10 @@
     
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Font Awesome - CDN alternatif -->
-    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v6.5.1/css/all.css">
-    <!-- Fallback Font Awesome -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.1/css/all.min.css">
+    <!-- Font Awesome - CDN robuste -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer">
+    <!-- Fallback Font Awesome alternatif -->
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v6.5.1/css/all.css" crossorigin="anonymous">
     
     <style>
         /* Global Poppins Font Application */
@@ -266,25 +266,63 @@
             font-weight: 500;
         }
 
-        /* Fallback pour icônes si Font Awesome ne charge pas */
+        /* Fallback PROPRE pour icônes Font Awesome */
         .icon-fallback {
             display: none;
         }
         
-        .fas:not([class*="fa-"]):before,
-        .far:not([class*="fa-"]):before,
-        .fab:not([class*="fa-"]):before {
-            content: "📄";
+        /* Utilisation UNICODE uniquement pour les fallbacks */
+        @supports not (font-family: "Font Awesome 6 Free") {
+            i.fas.fa-rocket::before, 
+            i.fa.fa-rocket::before { 
+                content: "🚀"; 
+                font-family: 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif !important;
+            }
+            
+            i.fas.fa-mountain::before, 
+            i.fa.fa-mountain::before { 
+                content: "🏔️"; 
+                font-family: 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif !important;
+            }
+            
+            i.fas.fa-edit::before, 
+            i.fa.fa-edit::before { 
+                content: "✏️"; 
+                font-family: 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif !important;
+            }
+            
+            i.fas.fa-info-circle::before, 
+            i.fa.fa-info-circle::before { 
+                content: "ℹ️"; 
+                font-family: 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif !important;
+            }
+            
+            i.fas.fa-tags::before, 
+            i.fa.fa-tags::before { 
+                content: "🏷️"; 
+                font-family: 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif !important;
+            }
+            
+            i.fas.fa-envelope::before, 
+            i.fa.fa-envelope::before { 
+                content: "✉️"; 
+                font-family: 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif !important;
+            }
+            
+            i.fas.fa-paper-plane::before, 
+            i.fa.fa-paper-plane::before { 
+                content: "📧"; 
+                font-family: 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif !important;
+            }
+            
+            i.fas.fa-calendar::before, 
+            i.fas.fa-calendar-alt::before,
+            i.fa.fa-calendar::before,
+            i.fa.fa-calendar-alt::before { 
+                content: "📅"; 
+                font-family: 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif !important;
+            }
         }
-        
-        .fa-rocket:before { content: "🚀"; }
-        .fa-mountain:before { content: "⛰️"; }
-        .fa-edit:before { content: "✏️"; }
-        .fa-info-circle:before { content: "ℹ️"; }
-        .fa-tags:before { content: "🏷️"; }
-        .fa-envelope:before { content: "✉️"; }
-        .fa-paper-plane:before { content: "📧"; }
-        .fa-calendar-alt:before { content: "📅"; }
 
         /* Responsive Design */
         @media (max-width: 768px) {
@@ -339,33 +377,13 @@
             <!-- Articles Section -->
             <div class="col-lg-8">
                 <!-- Articles dynamiques -->
-                <div class="preparation-state">
-                    <i class="fas fa-edit fa-4x"></i>
-                    <h3>Articles en préparation</h3>
-                    <p class="lead">Notre équipe éditoriale publie régulièrement du contenu de qualité sur les séminaires d'entreprise.</p>
-                    <p>Le premier article sera bientôt disponible !</p>
-                    
-                    <!-- Statistics Row -->
-                    <div class="row mt-4">
-                        <div class="col-md-4">
-                            <div class="stat-card">
-                                <span class="stat-number">48h</span>
-                                <div class="stat-label">Fréquence de publication</div>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="stat-card">
-                                <span class="stat-number">4</span>
-                                <div class="stat-label">Étapes de validation</div>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="stat-card">
-                                <span class="stat-number">95+</span>
-                                <div class="stat-label">Score SEO moyen</div>
-                            </div>
-                        </div>
-                    </div>
+                <div class="blog-card p-4">
+                    <h3><a href="articles/2025-01-21-seminaires-team-building-vosges.html" class="text-decoration-none">Séminaires Team Building dans les Vosges : Guide Complet 2025</a></h3>
+                    <p class="text-muted mb-2">
+                        <i class="fas fa-calendar me-2"></i>
+                        2025-01-21
+                    </p>
+                    <p class="mb-0">Découvrez comment organiser des séminaires team building exceptionnels dans les Vosges. Guide complet avec activités, lieux et conseil...</p>
                 </div>
                 <!-- Fin articles dynamiques -->
             </div>
