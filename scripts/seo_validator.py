@@ -307,7 +307,8 @@ class SEOValidator:
         
         # Vérifier la lisibilité basique
         sentences = re.split(r'[.!?]+', content_text)
-        avg_sentence_length = word_count / len([s for s in sentences if s.strip()]) if sentences else 0
+        valid_sentences = [s for s in sentences if s.strip()]
+        avg_sentence_length = word_count / len(valid_sentences) if valid_sentences and word_count > 0 else 0
         
         if avg_sentence_length > 25:
             warnings.append(f"Phrases longues en moyenne ({avg_sentence_length:.1f} mots/phrase)")
