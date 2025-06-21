@@ -204,6 +204,15 @@ jobs:
         echo "🔍 Vérification des permissions..."
         git remote -v
         
+        # Synchroniser avec le repository distant avant modification
+        echo "🔄 Synchronisation avec le repository distant..."
+        git fetch origin
+        git pull origin main --rebase || {
+          echo "⚠️ Conflit détecté, résolution automatique..."
+          git rebase --abort 2>/dev/null || true
+          git pull origin main --no-rebase
+        }
+        
         # Ajouter les fichiers modifiés
         git add articles/ images/ data/ index.html
         
@@ -225,7 +234,7 @@ jobs:
           if git push origin main; then
             echo "✅ Push réussi!"
           else
-            echo "⚠️ Push échoué, diagnostic en cours..."
+            echo "⚠️ Push échoué, nouvelle synchronisation et retry..."
             
             # Afficher les informations de debug
             echo "🔍 Token présent: $([[ -n "$GITHUB_TOKEN" ]] && echo "OUI" || echo "NON")"
@@ -233,9 +242,18 @@ jobs:
             echo "🔍 Branche actuelle: $(git branch --show-current)"
             echo "🔍 Statut git: $(git status --porcelain)"
             
-            # Tentative 2: Avec force (DANGEREUX, seulement si nécessaire)
+            # Resynchroniser et retry
+            git fetch origin
+            git pull origin main --no-rebase || echo "⚠️ Pull échoué, continuons..."
+            
+            # Tentative 2: Avec authentification explicite
             echo "🔄 Tentative avec authentification explicite..."
-            git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git main
+            if git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git main; then
+              echo "✅ Push réussi avec authentification explicite!"
+            else
+              echo "❌ Push échoué définitivement"
+              exit 1
+            fi
           fi
           
           echo "✅ Changements commitées et pushées"
