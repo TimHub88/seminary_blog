@@ -498,16 +498,18 @@ class SeminaryIntegrator:
             pattern = re.compile(r'\b' + re.escape(best_term_to_replace) + r'\b', re.IGNORECASE)
             match = pattern.search(original_text)
             
-            if match and hasattr(match, 'span') and callable(getattr(match, 'span', None)):
-                start, end = match.span()
-                before_text = original_text[:start]
-                after_text = original_text[end:]
-                
-                p_tag.clear()
-                p_tag.append(before_text)
-                p_tag.append(link_tag)
-                p_tag.append(after_text)
-                return True
+            if match and hasattr(match, 'span'):
+                span_method = getattr(match, 'span', None)
+                if span_method and callable(span_method):
+                    start, end = span_method()
+                    before_text = original_text[:start]
+                    after_text = original_text[end:]
+                    
+                    p_tag.clear()
+                    p_tag.append(before_text)
+                    p_tag.append(link_tag)
+                    p_tag.append(after_text)
+                    return True
         except Exception as e:
             logger.error(f"Erreur lors du remplacement de terme: {e}")
             return False
