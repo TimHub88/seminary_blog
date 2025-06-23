@@ -450,18 +450,27 @@ class SeminaryIntegrator:
             for p_tag in paragraphs:
                 p_text = p_tag.get_text()
                 if target_sentence[:50] in p_text:  # Match partiel pour robustesse
-                    # Créer le lien - Utiliser la soup parent pour éviter les erreurs
-                    soup = content_div.find_parent() or content_div
-                    link_tag = soup.new_tag(
-                        'a',
-                        href=link_info.get('url', '#'),
-                        title=link_info.get('title', ''),
-                        target='_blank',
-                        rel='noopener'
-                    )
-                    # Ajouter la classe séparément pour éviter les problèmes de kwargs
-                    link_tag['class'] = 'seminary-link'
-                    link_tag.string = link_info.get('link_text', link_info.get('target_keyword', 'Seminary'))
+                    # Créer le lien avec protection maximale
+                    try:
+                        # Obtenir la soup parente de manière sécurisée
+                        soup = getattr(content_div, '_parent_tree', None) or content_div.find_parent() or content_div
+                        if not soup or not hasattr(soup, 'new_tag'):
+                            logger.warning("Impossible de créer un nouveau tag, fallback")
+                            return False
+                            
+                        link_tag = soup.new_tag(
+                            'a',
+                            href=link_info.get('url', '#'),
+                            title=link_info.get('title', ''),
+                            target='_blank',
+                            rel='noopener'
+                        )
+                        # Ajouter la classe séparément pour éviter les problèmes de kwargs
+                        link_tag['class'] = 'seminary-link'
+                        link_tag.string = link_info.get('link_text', link_info.get('target_keyword', 'Seminary'))
+                    except Exception as e:
+                        logger.error(f"Erreur lors de la création du tag: {e}")
+                        return False
                     
                     # Remplacer le terme
                     if self._replace_term_with_link(p_tag, link_info, link_tag):
@@ -485,19 +494,23 @@ class SeminaryIntegrator:
             return False
 
         original_text = p_tag.get_text()
-        pattern = re.compile(r'\b' + re.escape(best_term_to_replace) + r'\b', re.IGNORECASE)
-        match = pattern.search(original_text)
-        
-        if match:
-            start, end = match.span()
-            before_text = original_text[:start]
-            after_text = original_text[end:]
+        try:
+            pattern = re.compile(r'\b' + re.escape(best_term_to_replace) + r'\b', re.IGNORECASE)
+            match = pattern.search(original_text)
             
-            p_tag.clear()
-            p_tag.append(before_text)
-            p_tag.append(link_tag)
-            p_tag.append(after_text)
-            return True
+            if match and hasattr(match, 'span') and callable(getattr(match, 'span', None)):
+                start, end = match.span()
+                before_text = original_text[:start]
+                after_text = original_text[end:]
+                
+                p_tag.clear()
+                p_tag.append(before_text)
+                p_tag.append(link_tag)
+                p_tag.append(after_text)
+                return True
+        except Exception as e:
+            logger.error(f"Erreur lors du remplacement de terme: {e}")
+            return False
         
         return False
     
