@@ -415,69 +415,48 @@ class SeminaryIntegrator:
             return html_content
     
     def _integrate_single_link(self, content_div: Tag, link_info: Dict, text_content: str) -> bool:
-        """Intègre un seul lien dans le contenu."""
-        try:
-            # Trouver la phrase correspondante
-            target_sentence = link_info['position']['opportunities'][0]['sentence']
-            
-            # Chercher cette phrase dans le HTML
-            for p_tag in content_div.find_all(['p', 'div', 'span']):
-                p_text = p_tag.get_text()
-                if target_sentence[:50] in p_text:  # Match partiel pour robustesse
-                    # Créer le lien
-                    link_tag = content_div.new_tag(
-                        'a',
-                        href=link_info['url'],
-                        title=link_info['title'],
-                        target='_blank',
-                        rel='noopener'
-                    )
-                    link_tag.string = link_info['link_text']
-                    
-                    # Insérer le lien de manière contextuelle
-                    if link_info['link_type'] == 'call_to_action':
-                        # Ajouter à la fin du paragraphe
-                        p_tag.append(' ')
-                        p_tag.append(link_tag)
-                        p_tag.append('.')
-                    else:
-                        # Remplacer un terme pertinent par le lien
-                        self._replace_term_with_link(p_tag, link_info, link_tag)
-                    
+        """Intègre un seul lien dans la section de contenu."""
+        # Trouver le paragraphe cible
+        # Simple recherche de la première phrase pour le moment
+        target_sentence = link_info['position']['sentence']
+        
+        paragraphs = content_div.find_all('p')
+        for p_tag in paragraphs:
+            if target_sentence in p_tag.get_text():
+                link_tag = self._create_link_tag(link_info)
+                
+                # Remplacer le terme
+                if self._replace_term_with_link(p_tag, link_info, link_tag):
+                    logger.info(f"Lien intégré pour: {link_info['page_key']}")
                     return True
-                    
-        except Exception as e:
-            logger.error(f"Erreur lors de l'intégration d'un lien: {e}")
+        
+        logger.warning(f"Impossible de trouver une position pour le lien: {link_info['page_key']}")
+        return False
+
+    def _replace_term_with_link(self, p_tag: Tag, link_info: Dict, link_tag: Tag) -> bool:
+        """Remplace un terme par un lien dans un paragraphe."""
+        
+        best_term_to_replace = link_info.get('target_keyword')
+        if not best_term_to_replace:
+            logger.warning("Aucun mot-clé cible pour le remplacement.")
+            return False
+
+        original_text = p_tag.get_text()
+        pattern = re.compile(r'\b' + re.escape(best_term_to_replace) + r'\b', re.IGNORECASE)
+        match = pattern.search(original_text)
+        
+        if match:
+            start, end = match.span()
+            before_text = original_text[:start]
+            after_text = original_text[end:]
+            
+            p_tag.clear()
+            p_tag.append(before_text)
+            p_tag.append(link_tag)
+            p_tag.append(after_text)
+            return True
         
         return False
-    
-    def _replace_term_with_link(self, p_tag: Tag, link_info: Dict, link_tag: Tag) -> None:
-        """Remplace un terme par un lien dans un paragraphe."""
-        page_info = self.seminary_pages[link_info['page_key']]
-        
-        # Chercher un mot-clé à remplacer
-        p_text = p_tag.get_text()
-        
-        for keyword in page_info['keywords']:
-            if keyword in p_text.lower():
-                # Trouver la première occurrence du mot-clé
-                pattern = re.compile(re.escape(keyword), re.IGNORECASE)
-                match = pattern.search(p_text)
-                
-                if match:
-                    # Diviser le texte et insérer le lien
-                    before = p_text[:match.start()]
-                    after = p_text[match.end():]
-                    
-                    # Vider le paragraphe et reconstruire
-                    p_tag.clear()
-                    if before:
-                        p_tag.append(before)
-                    p_tag.append(link_tag)
-                    if after:
-                        p_tag.append(after)
-                    
-                    break
     
     def process_article(self, html_content: str, article_title: str = "") -> Dict:
         """
