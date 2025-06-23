@@ -416,22 +416,63 @@ class SeminaryIntegrator:
     
     def _integrate_single_link(self, content_div: Tag, link_info: Dict, text_content: str) -> bool:
         """Intègre un seul lien dans la section de contenu."""
-        # Trouver le paragraphe cible
-        # Simple recherche de la première phrase pour le moment
-        target_sentence = link_info['position']['sentence']
-        
-        paragraphs = content_div.find_all('p')
-        for p_tag in paragraphs:
-            if target_sentence in p_tag.get_text():
-                link_tag = self._create_link_tag(link_info)
-                
-                # Remplacer le terme
-                if self._replace_term_with_link(p_tag, link_info, link_tag):
-                    logger.info(f"Lien intégré pour: {link_info['page_key']}")
-                    return True
-        
-        logger.warning(f"Impossible de trouver une position pour le lien: {link_info['page_key']}")
-        return False
+        try:
+            # Accès sécurisé aux données de position
+            position_data = link_info.get('position', {})
+            
+            # Essayer différentes clés possibles pour obtenir la phrase cible
+            target_sentence = None
+            if isinstance(position_data, dict):
+                # Essayer les clés possibles
+                if 'sentence' in position_data:
+                    target_sentence = position_data['sentence']
+                elif 'opportunities' in position_data and position_data['opportunities']:
+                    target_sentence = position_data['opportunities'][0].get('sentence', '')
+                elif 'text' in position_data:
+                    target_sentence = position_data['text']
+            
+            if not target_sentence:
+                # Fallback: utiliser le mot-clé cible pour trouver une phrase
+                target_keyword = link_info.get('target_keyword', '')
+                if target_keyword:
+                    # Chercher une phrase contenant le mot-clé
+                    for p_tag in content_div.find_all('p'):
+                        if target_keyword.lower() in p_tag.get_text().lower():
+                            target_sentence = p_tag.get_text()[:100]  # Premiers 100 caractères
+                            break
+            
+            if not target_sentence:
+                logger.warning(f"Impossible de trouver une phrase cible pour le lien: {link_info.get('page_key', 'unknown')}")
+                return False
+            
+            # Chercher le paragraphe correspondant
+            paragraphs = content_div.find_all('p')
+            for p_tag in paragraphs:
+                p_text = p_tag.get_text()
+                if target_sentence[:50] in p_text:  # Match partiel pour robustesse
+                    # Créer le lien
+                    link_tag = content_div.new_tag(
+                        'a',
+                        href=link_info.get('url', '#'),
+                        title=link_info.get('title', ''),
+                        target='_blank',
+                        rel='noopener',
+                        **{'class': 'seminary-link'}
+                    )
+                    link_tag.string = link_info.get('link_text', link_info.get('target_keyword', 'Seminary'))
+                    
+                    # Remplacer le terme
+                    if self._replace_term_with_link(p_tag, link_info, link_tag):
+                        logger.info(f"Lien intégré pour: {link_info.get('page_key', 'unknown')}")
+                        return True
+                    break
+            
+            logger.warning(f"Impossible de trouver une position pour le lien: {link_info.get('page_key', 'unknown')}")
+            return False
+            
+        except Exception as e:
+            logger.error(f"Erreur lors de l'intégration d'un lien: {e}")
+            return False
 
     def _replace_term_with_link(self, p_tag: Tag, link_info: Dict, link_tag: Tag) -> bool:
         """Remplace un terme par un lien dans un paragraphe."""

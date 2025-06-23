@@ -560,3 +560,334 @@ class ImageHandler:
 </style>
 """
         return infographic_html
+
+    def suggest_illustrations_for_article(self, article_content: str, title: str) -> List[Dict]:
+        """
+        Suggère des illustrations CSS appropriées pour un article.
+        
+        Args:
+            article_content: Contenu de l'article
+            title: Titre de l'article
+            
+        Returns:
+            Liste de suggestions d'illustrations
+        """
+        suggestions = []
+        content_lower = (article_content + " " + title).lower()
+        
+        # Suggestions basées sur le contenu
+        if any(word in content_lower for word in ['statistique', 'pourcentage', '%', 'étude', 'résultat']):
+            suggestions.append({
+                'illustration_type': 'chart',
+                'chart_type': 'bar',
+                'title': 'Graphique statistiques',
+                'description': 'Graphique en barres avec données sur les séminaires'
+            })
+        
+        if any(word in content_lower for word in ['processus', 'étape', 'méthode', 'comment']):
+            suggestions.append({
+                'illustration_type': 'infographic',
+                'title': 'Infographie processus',
+                'description': 'Étapes du processus Seminary'
+            })
+        
+        if any(word in content_lower for word in ['performance', 'amélioration', 'progression', 'succès']):
+            suggestions.append({
+                'illustration_type': 'chart',
+                'chart_type': 'progress',
+                'title': 'Graphique de progression',
+                'description': 'Cercle de progression pour montrer l\'amélioration'
+            })
+        
+        if any(word in content_lower for word in ['organisation', 'flux', 'workflow']):
+            suggestions.append({
+                'illustration_type': 'diagram',
+                'diagram_type': 'process',
+                'title': 'Diagramme de flux',
+                'description': 'Flux d\'organisation Seminary'
+            })
+        
+        # Suggestion par défaut
+        if not suggestions:
+            suggestions.append({
+                'illustration_type': 'icon',
+                'title': 'Icônes thématiques',
+                'description': 'Collection d\'icônes représentant les séminaires'
+            })
+        
+        return suggestions
+
+    def get_unsplash_config_status(self) -> Dict[str, Any]:
+        """Retourne le statut de la configuration Unsplash."""
+        return {
+            'access_key_configured': bool(self.unsplash_config.access_key),
+            'secret_key_configured': bool(self.unsplash_config.secret_key),
+            'demo_mode': self.unsplash_config.demo_mode,
+            'rate_limit_per_hour': self.unsplash_config.rate_limit_per_hour,
+            'requests_used': self.request_tracker['count'],
+            'requests_remaining': self.unsplash_config.rate_limit_per_hour - self.request_tracker['count'],
+            'limit_reached': self.request_tracker['limit_reached']
+        }
+
+    def suggest_images_for_article(self, article_content: str, title: str) -> List[Dict]:
+        """
+        Suggère des images appropriées pour un article.
+        
+        Args:
+            article_content: Contenu de l'article
+            title: Titre de l'article
+            
+        Returns:
+            Liste d'images suggérées avec scores de pertinence
+        """
+        # Version simplifiée pour éviter les erreurs
+        try:
+            # Analyser le contenu pour identifier les mots-clés pertinents
+            content_keywords = self._extract_keywords_from_content(article_content, title)
+            
+            # Préparer les requêtes de recherche
+            search_queries = self._generate_search_queries(content_keywords)
+            
+            all_suggestions = []
+            
+            for query in search_queries[:3]:  # Limiter à 3 requêtes pour éviter les quotas
+                images = self.search_images(query, count=5)
+                
+                for image in images:
+                    # Calculer un score de pertinence
+                    relevance_score = self._calculate_relevance_score(
+                        image, content_keywords, query
+                    )
+                    
+                    suggestion = {
+                        **image,
+                        'search_query': query,
+                        'relevance_score': relevance_score,
+                        'suggested_alt_text': self._generate_alt_text(image, content_keywords),
+                        'suggested_title': self._generate_image_title(image, content_keywords)
+                    }
+                    
+                    all_suggestions.append(suggestion)
+            
+            # Trier par score de pertinence
+            all_suggestions.sort(key=lambda x: x['relevance_score'], reverse=True)
+            
+            # Supprimer les doublons basés sur l'ID
+            seen_ids = set()
+            unique_suggestions = []
+            for suggestion in all_suggestions:
+                if suggestion['id'] not in seen_ids:
+                    seen_ids.add(suggestion['id'])
+                    unique_suggestions.append(suggestion)
+            
+            return unique_suggestions[:5]  # Retourner les 5 meilleures suggestions
+            
+        except Exception as e:
+            logger.error(f"Erreur dans suggest_images_for_article: {e}")
+            return []  # Retourner une liste vide en cas d'erreur
+
+    def _extract_keywords_from_content(self, content: str, title: str) -> List[str]:
+        """Extrait les mots-clés pertinents du contenu."""
+        # Combiner titre et contenu
+        full_text = f"{title} {content}".lower()
+        
+        # Mots-clés spécifiques aux séminaires
+        seminary_terms = [
+            'séminaire', 'équipe', 'team building', 'formation',
+            'entreprise', 'professionnel', 'meeting', 'réunion',
+            'montagne', 'nature', 'forêt', 'outdoor', 'vosges'
+        ]
+        
+        # Mots-clés trouvés dans le contenu
+        found_keywords = []
+        for term in seminary_terms:
+            if term in full_text:
+                found_keywords.append(term)
+        
+        # Ajouter des mots-clés génériques si aucun trouvé
+        if not found_keywords:
+            found_keywords = ['corporate', 'business', 'meeting', 'professional']
+        
+        return found_keywords
+
+    def _generate_search_queries(self, keywords: List[str]) -> List[str]:
+        """Génère des requêtes de recherche optimisées."""
+        queries = []
+        
+        # Requête basée sur les mots-clés trouvés
+        if keywords:
+            primary_query = ' '.join(keywords[:3])  # Max 3 mots-clés
+            queries.append(f"{primary_query} business")
+        
+        # Requêtes Seminary spécifiques
+        queries.extend([
+            "corporate retreat mountain",
+            "business seminar nature",
+            "team meeting outdoor"
+        ])
+        
+        # Ajouter des requêtes de fallback
+        queries.extend(self.seminary_keywords[:2])
+        
+        return queries[:5]  # Max 5 requêtes
+
+    def _calculate_relevance_score(self, image: Dict, keywords: List[str], query: str) -> float:
+        """Calcule un score de pertinence pour une image."""
+        score = 0.0
+        
+        # Score basé sur la description de l'image
+        description = (image.get('description', '') + ' ' + 
+                      image.get('alt_description', '')).lower()
+        
+        for keyword in keywords:
+            if keyword.lower() in description:
+                score += 2.0
+        
+        # Score basé sur la requête
+        query_words = query.lower().split()
+        for word in query_words:
+            if word in description:
+                score += 1.0
+        
+        # Bonus pour les images avec de bonnes dimensions
+        width = image.get('width', 0)
+        height = image.get('height', 0)
+        if width >= 1200 and height >= 600:
+            score += 1.0
+        
+        # Malus pour les images de fallback
+        if image.get('is_fallback', False):
+            score *= 0.5
+        
+        return score
+
+    def _generate_alt_text(self, image: Dict, keywords: List[str]) -> str:
+        """Génère un texte alt optimisé pour l'image."""
+        base_description = image.get('description', '')
+        
+        if base_description:
+            # Nettoyer et adapter la description
+            alt_text = re.sub(r'[^\w\s-]', '', base_description)
+            alt_text = alt_text.strip()[:100]  # Limiter à 100 caractères
+        else:
+            # Générer une description basée sur les mots-clés
+            alt_text = f"Séminaire professionnel en {' '.join(keywords[:2])}"
+        
+        return alt_text
+
+    def _generate_image_title(self, image: Dict, keywords: List[str]) -> str:
+        """Génère un titre optimisé pour l'image."""
+        photographer = image.get('photographer', 'Photographe')
+        
+        if keywords:
+            title = f"Séminaire {keywords[0]} - Photo par {photographer}"
+        else:
+            title = f"Séminaire d'entreprise - Photo par {photographer}"
+        
+        return title[:150]  # Limiter la longueur
+
+    def download_image(self, image_info: Dict, filename: Optional[str] = None) -> Optional[str]:
+        """
+        Télécharge une image et la sauvegarde localement.
+        
+        Args:
+            image_info: Informations de l'image (depuis search_images)
+            filename: Nom de fichier personnalisé (optionnel)
+            
+        Returns:
+            Chemin local de l'image téléchargée ou None si échec
+        """
+        try:
+            # Générer le nom de fichier
+            if not filename:
+                # Utiliser l'ID de l'image et nettoyer la description
+                clean_desc = re.sub(r'[^\w\s-]', '', image_info.get('description', ''))
+                clean_desc = re.sub(r'\s+', '-', clean_desc.strip())[:50]
+                filename = f"{image_info['id']}_{clean_desc}.jpg"
+            
+            # Assurer l'extension .jpg
+            if not filename.lower().endswith(('.jpg', '.jpeg')):
+                filename += '.jpg'
+            
+            file_path = self.images_dir / filename
+            
+            # Vérifier si l'image existe déjà
+            if file_path.exists():
+                logger.info(f"Image déjà présente: {filename}")
+                return str(file_path)
+            
+            # Télécharger l'image
+            download_url = image_info.get('url_regular', image_info.get('download_url'))
+            
+            # Pour Unsplash, déclencher le download tracking
+            if not image_info.get('is_fallback', False) and 'download_url' in image_info:
+                try:
+                    headers = {'Authorization': f'Client-ID {self.unsplash_config.access_key}'}
+                    requests.get(image_info['download_url'], headers=headers, timeout=10)
+                except Exception:
+                    pass  # Le tracking n'est pas critique
+            
+            # Télécharger l'image
+            response = requests.get(download_url, timeout=self.image_config['timeout'])
+            response.raise_for_status()
+            
+            # Vérifier la taille du fichier
+            if len(response.content) > self.image_config['max_file_size']:
+                logger.warning(f"Image trop volumineuse: {len(response.content)} bytes")
+                # Essayer avec l'URL small
+                small_url = image_info.get('url_small')
+                if small_url:
+                    response = requests.get(small_url, timeout=self.image_config['timeout'])
+                    response.raise_for_status()
+            
+            # Sauvegarder l'image
+            with open(file_path, 'wb') as f:
+                f.write(response.content)
+            
+            logger.info(f"Image téléchargée: {filename} ({len(response.content)} bytes)")
+            return str(file_path)
+            
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Erreur lors du téléchargement: {e}")
+            return None
+        except Exception as e:
+            logger.error(f"Erreur lors de la sauvegarde de l'image: {e}")
+            return None
+
+def main():
+    """Point d'entrée pour les tests CLI."""
+    import argparse
+    
+    parser = argparse.ArgumentParser(description="Image Handler - Seminary Blog")
+    parser.add_argument('--search', help='Rechercher des images')
+    parser.add_argument('--api-key', help='Clé API Unsplash')
+    parser.add_argument('--download', help='ID image à télécharger')
+    parser.add_argument('--cleanup', type=int, help='Nettoyer images plus anciennes que X jours')
+    
+    args = parser.parse_args()
+    
+    handler = ImageHandler(args.api_key)
+    
+    if args.search:
+        images = handler.search_images(args.search, count=5)
+        print(f"=== RECHERCHE: {args.search} ===")
+        for i, img in enumerate(images, 1):
+            print(f"{i}. {img['id']} - {img['description'][:50]}...")
+            print(f"   {img['width']}x{img['height']} - {img['photographer']}")
+    
+    if args.download and args.search:
+        images = handler.search_images(args.search, count=1)
+        if images:
+            path = handler.download_image(images[0])
+            if path:
+                print(f"Image téléchargée: {path}")
+            else:
+                print("Échec du téléchargement")
+    
+    if args.cleanup:
+        deleted = handler.cleanup_old_images(args.cleanup)
+        print(f"Images supprimées: {deleted}")
+
+
+if __name__ == "__main__":
+    main()
