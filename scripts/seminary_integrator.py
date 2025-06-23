@@ -450,15 +450,17 @@ class SeminaryIntegrator:
             for p_tag in paragraphs:
                 p_text = p_tag.get_text()
                 if target_sentence[:50] in p_text:  # Match partiel pour robustesse
-                    # Créer le lien
-                    link_tag = content_div.new_tag(
+                    # Créer le lien - Utiliser la soup parent pour éviter les erreurs
+                    soup = content_div.find_parent() or content_div
+                    link_tag = soup.new_tag(
                         'a',
                         href=link_info.get('url', '#'),
                         title=link_info.get('title', ''),
                         target='_blank',
-                        rel='noopener',
-                        **{'class': 'seminary-link'}
+                        rel='noopener'
                     )
+                    # Ajouter la classe séparément pour éviter les problèmes de kwargs
+                    link_tag['class'] = 'seminary-link'
                     link_tag.string = link_info.get('link_text', link_info.get('target_keyword', 'Seminary'))
                     
                     # Remplacer le terme

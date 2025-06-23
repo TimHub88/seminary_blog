@@ -488,23 +488,52 @@ class ArticleGenerator:
         
         final_html = self.article_template.render(**template_vars)
         
-        # Intégrer les liens Seminary
-        seminary_result = self.seminary_integrator.process_article(
-            final_html, 
-            article_data['metadata'].get('title', '')
-        )
-        
-        final_html = seminary_result['modified_html']
-        
-        logger.info(f"Liens Seminary ajoutés: {seminary_result['links_added']}")
+        # Intégrer les liens Seminary avec protection anti-corruption
+        try:
+            seminary_result = self.seminary_integrator.process_article(
+                final_html, 
+                article_data['metadata'].get('title', '')
+            )
+            
+            # Vérifier que l'intégration Seminary n'a pas corrompu le HTML
+            modified_html = seminary_result['modified_html']
+            if '<html>' in modified_html and len(modified_html) > len(final_html) * 0.8:
+                final_html = modified_html
+                logger.info(f"Liens Seminary ajoutés: {seminary_result['links_added']}")
+            else:
+                logger.warning("Intégration Seminary a corrompu le HTML, conservation de l'original")
+                seminary_result = {
+                    'modified_html': final_html,
+                    'links_added': 0,
+                    'integration_plan': {'confidence_score': 0},
+                    'analysis': {}
+                }
+                
+        except Exception as e:
+            logger.error(f"Erreur lors de l'intégration Seminary: {e}")
+            seminary_result = {
+                'modified_html': final_html,
+                'links_added': 0,
+                'integration_plan': {'confidence_score': 0},
+                'analysis': {}
+            }
         
         # Intégrer images et illustrations CSS/SVG
         try:
             visual_integration = self._integrate_visual_elements(final_html, article_data)
-            final_html = visual_integration['html']
-            logger.info(f"Éléments visuels intégrés: {visual_integration['summary']}")
+            
+            # Vérifier que l'intégration visuelle n'a pas corrompu le HTML
+            integrated_html = visual_integration['html']
+            if '<html>' in integrated_html and len(integrated_html) > len(final_html) * 0.8:
+                final_html = integrated_html
+                logger.info(f"Éléments visuels intégrés: {visual_integration['summary']}")
+            else:
+                logger.warning("Intégration visuelle a corrompu le HTML, conservation de l'original")
+                visual_integration = {'summary': '0 éléments visuels ajoutés', 'elements_added': []}
+                
         except Exception as e:
             logger.error(f"Erreur lors de l'intégration visuelle: {e}")
+            visual_integration = {'summary': '0 éléments visuels ajoutés', 'elements_added': []}
         
         return {
             'final_html': final_html,
