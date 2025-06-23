@@ -130,7 +130,7 @@ class ArticleGenerator:
     def _extract_final_content_from_deepseek(self, raw_content: str) -> str:
         """
         Extrait le contenu final du modèle DeepSeek-R1 qui expose son reasoning.
-        Le modèle DeepSeek-R1 commence souvent par <think>...</think> puis donne la vraie réponse.
+        Version simplifiée et plus permissive.
         """
         import re
         
@@ -141,45 +141,53 @@ class ArticleGenerator:
             match = re.search(think_pattern, raw_content, re.DOTALL)
             if match:
                 final_content = match.group(1).strip()
-                if final_content and len(final_content) > 100:  # Assurer un contenu substantiel
+                if final_content and len(final_content) > 100:
+                    logger.info(f"Extraction <think>: {len(final_content)} caractères")
                     return final_content
         
-        # Cas 2: Contenu qui commence directement par du reasoning
+        # Cas 2: Chercher le premier titre <h1> et prendre tout ce qui suit
+        h1_pattern = r'(<h1>.*)'
+        match = re.search(h1_pattern, raw_content, re.DOTALL | re.IGNORECASE)
+        if match:
+            html_content = match.group(1).strip()
+            if len(html_content) > 200:
+                logger.info(f"Extraction <h1>: {len(html_content)} caractères")
+                return html_content
+        
+        # Cas 3: Chercher le premier paragraphe HTML et prendre tout ce qui suit
+        p_pattern = r'(<[ph][1-6]?>.*)'
+        match = re.search(p_pattern, raw_content, re.DOTALL | re.IGNORECASE)
+        if match:
+            html_content = match.group(1).strip()
+            if len(html_content) > 150:
+                logger.info(f"Extraction HTML: {len(html_content)} caractères")
+                return html_content
+        
+        # Cas 4: Filtrer seulement les lignes de reasoning évidentes
         lines = raw_content.split('\n')
-        final_lines = []
-        reasoning_ended = False
+        filtered_lines = []
         
         for line in lines:
-            line = line.strip()
-            if not line:
+            line_stripped = line.strip()
+            if not line_stripped:
                 continue
                 
-            # Détecter la fin du reasoning (phrases méta sur le processus)
-            if any(phrase in line.lower() for phrase in [
-                'je vais', 'il faut', 'l\'utilisateur', 'je me concentre', 
-                'il faudra', 'j\'éviterai', 'hmm', 'probablement', 
-                'semble avoir besoin', 'visiblement', 'la chute sur'
+            # Filtrer SEULEMENT les lignes de reasoning très évidentes
+            if any(phrase in line_stripped.lower() for phrase in [
+                'je vais créer', 'je dois', 'il me faut', 'mon objectif',
+                'je commence par', 'je vais maintenant', 'laissez-moi'
             ]):
                 continue
                 
-            # Si c'est une phrase normale (pas du meta-reasoning)
-            if (line.startswith('#') or  # Titre
-                line.startswith('<') or   # HTML
-                len(line.split()) > 5):   # Phrase substantielle
-                reasoning_ended = True
-                
-            if reasoning_ended and line:
-                final_lines.append(line)
+            filtered_lines.append(line)
         
-        if final_lines and len('\n'.join(final_lines)) > 200:
-            return '\n'.join(final_lines)
+        filtered_content = '\n'.join(filtered_lines).strip()
+        if len(filtered_content) > 200:
+            logger.info(f"Extraction filtrée: {len(filtered_content)} caractères")
+            return filtered_content
         
-        # Cas 3: Fallback - prendre tout le contenu s'il semble valide
-        if len(raw_content) > 300 and not raw_content.lower().startswith('hmm'):
-            return raw_content
-            
-        # Cas 4: Contenu trop court ou invalide
-        logger.warning("Contenu généré insuffisant ou invalide")
+        # Cas 5: Fallback - prendre TOUT le contenu brut
+        logger.warning(f"Aucune extraction spécifique, utilisation contenu brut: {len(raw_content)} caractères")
         return raw_content
     
     def _load_article_template(self) -> Template:
