@@ -450,31 +450,14 @@ class SeminaryIntegrator:
             for p_tag in paragraphs:
                 p_text = p_tag.get_text()
                 if target_sentence[:50] in p_text:  # Match partiel pour robustesse
-                    # Créer le lien avec protection maximale et validation complète
+                    # Créer le lien de manière simple et robuste
                     try:
-                        # Obtenir la soup parente de manière sécurisée avec validations multiples
-                        soup = None
-                        if hasattr(content_div, '_parent_tree') and content_div._parent_tree:
-                            soup = content_div._parent_tree
-                        elif hasattr(content_div, 'find_parent') and callable(content_div.find_parent):
-                            parent = content_div.find_parent()
-                            if parent and hasattr(parent, 'new_tag'):
-                                soup = parent
+                        # Méthode simplifiée : utiliser BeautifulSoup directement pour créer le tag
+                        from bs4 import BeautifulSoup
                         
-                        # Fallback ultime sur content_div si c'est une soup valide
-                        if not soup and hasattr(content_div, 'new_tag') and callable(content_div.new_tag):
-                            soup = content_div
-                        
-                        if not soup:
-                            logger.warning("Impossible de trouver une soup valide pour créer le tag")
-                            return False
-                            
-                        # Créer le tag avec validation que new_tag existe et est callable
-                        if not hasattr(soup, 'new_tag') or not callable(soup.new_tag):
-                            logger.warning("La soup n'a pas de méthode new_tag callable")
-                            return False
-                            
-                        link_tag = soup.new_tag(
+                        # Créer un mini-document pour générer le tag
+                        mini_soup = BeautifulSoup("", 'html.parser')
+                        link_tag = mini_soup.new_tag(
                             'a',
                             href=link_info.get('url', '#'),
                             title=link_info.get('title', ''),
@@ -482,17 +465,9 @@ class SeminaryIntegrator:
                             rel='noopener'
                         )
                         
-                        # Validation que link_tag a été créé correctement
-                        if not link_tag:
-                            logger.warning("Échec de création du link_tag")
-                            return False
-                        
-                        # Ajouter les attributs avec validation
-                        if hasattr(link_tag, '__setitem__') and callable(link_tag.__setitem__):
-                            link_tag['class'] = 'seminary-link'
-                        
-                        if hasattr(link_tag, 'string'):
-                            link_tag.string = link_info.get('link_text', link_info.get('target_keyword', 'Seminary'))
+                        # Ajouter les attributs
+                        link_tag['class'] = 'seminary-link'
+                        link_tag.string = link_info.get('link_text', link_info.get('target_keyword', 'Seminary'))
                             
                     except Exception as e:
                         logger.error(f"Erreur lors de la création du tag: {e}")

@@ -461,91 +461,93 @@ class ImageHandler:
         return chart_html
     
     def _generate_infographic_css(self, theme: str, **kwargs) -> str:
-        """Génère une infographie CSS sur les séminaires."""
-        steps = kwargs.get('steps', [
-            {'title': 'Diagnostic', 'desc': 'Analyse des besoins équipe', 'icon': '🔍'},
-            {'title': 'Planification', 'desc': 'Choix du lieu et activités', 'icon': '📋'},
-            {'title': 'Animation', 'desc': 'Séminaire dans les Vosges', 'icon': '🏔️'},
-            {'title': 'Suivi', 'desc': 'Mesure des impacts', 'icon': '📈'}
-        ])
+        """Génère une infographie CSS interactive."""
+        steps = [
+            "1. Analyse des besoins",
+            "2. Conception du programme",
+            "3. Séminaire dans les Vosges", 
+            "4. Suivi post-formation",
+            "5. Évaluation des résultats"
+        ]
         
         infographic_html = """
 <div class="seminary-infographic" style="
     margin: 2rem 0;
     padding: 2rem;
-    background: white;
+    background: linear-gradient(135deg, #7E22CE 0%, #A94BE0 50%, #6B1B9A 100%);
     border-radius: 16px;
-    box-shadow: 0 8px 25px rgba(126, 34, 206, 0.1);
+    color: white;
+    box-shadow: 0 8px 24px rgba(126, 34, 206, 0.3);
 ">
-    <h3 style="
-        text-align: center;
-        color: #7E22CE;
-        margin-bottom: 3rem;
-        font-weight: 600;
-        font-size: 1.8rem;
-    ">Processus Seminary en 4 étapes</h3>
+    <h3 style="text-align: center; margin-bottom: 2rem; font-size: 1.5rem; font-weight: 600;">
+        🎯 Processus Seminary - De l'idée au succès
+    </h3>
     
-    <div style="
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 2rem;
-        position: relative;
-    ">
+    <div class="infographic-timeline" style="position: relative;">
 """
         
         for i, step in enumerate(steps):
+            is_last = i == len(steps) - 1
+            
             infographic_html += f"""
-        <div class="infographic-step" style="
-            text-align: center;
-            position: relative;
-            animation: seminary-step-appear 0.6s ease-out {i * 0.3}s both;
+        <div class="timeline-item" style="
+            display: flex;
+            align-items: center;
+            margin-bottom: {0 if is_last else 1.5}rem;
+            animation: seminary-fade-in-up 0.6s ease-out {i * 0.2}s both;
         ">
-            <div style="
-                width: 80px;
-                height: 80px;
-                background: linear-gradient(135deg, #7E22CE, #A94BE0);
+            <div class="step-number" style="
+                width: 40px;
+                height: 40px;
+                background: rgba(255, 255, 255, 0.2);
+                border: 2px solid rgba(255, 255, 255, 0.4);
                 border-radius: 50%;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                margin: 0 auto 1rem;
-                font-size: 2rem;
-                color: white;
-                box-shadow: 0 4px 15px rgba(126, 34, 206, 0.3);
-            ">{step['icon']}</div>
-            
-            <h4 style="
-                color: #333;
-                margin-bottom: 0.5rem;
                 font-weight: 600;
-            ">{step['title']}</h4>
+                margin-right: 1rem;
+                backdrop-filter: blur(10px);
+            ">{i + 1}</div>
             
-            <p style="
-                color: #666;
-                font-size: 0.9rem;
-                line-height: 1.5;
-            ">{step['desc']}</p>
-            
-            <div style="
-                position: absolute;
-                top: 40px;
-                right: -1rem;
-                width: 2rem;
-                height: 2px;
-                background: linear-gradient(to right, #7E22CE, transparent);
-                display: {'' if i < len(steps) - 1 else 'none'};
-            "></div>
+            <div class="step-content" style="
+                flex: 1;
+                padding: 1rem;
+                background: rgba(255, 255, 255, 0.1);
+                border-radius: 8px;
+                backdrop-filter: blur(10px);
+                border: 1px solid rgba(255, 255, 255, 0.2);
+            ">
+                <h4 style="margin: 0; font-size: 1.1rem; font-weight: 500;">{step}</h4>
+            </div>
         </div>"""
+            
+            # Ajouter une ligne de connexion sauf pour le dernier élément
+            if not is_last:
+                infographic_html += """
+        <div class="timeline-connector" style="
+            width: 2px;
+            height: 20px;
+            background: rgba(255, 255, 255, 0.3);
+            margin-left: 19px;
+            margin-bottom: 0.5rem;
+        "></div>"""
         
         infographic_html += """
+    </div>
+    
+    <div style="text-align: center; margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid rgba(255,255,255,0.2);">
+        <p style="margin: 0; font-size: 0.9rem; opacity: 0.9;">
+            ✨ Chaque étape est personnalisée selon vos objectifs d'équipe
+        </p>
     </div>
 </div>
 
 <style>
-@keyframes seminary-step-appear {
+@keyframes seminary-fade-in-up {
     from {
         opacity: 0;
-        transform: translateY(30px);
+        transform: translateY(20px);
     }
     to {
         opacity: 1;
@@ -553,13 +555,285 @@ class ImageHandler:
     }
 }
 
-.infographic-step:hover {
-    transform: translateY(-5px);
+.seminary-infographic:hover .timeline-item {
+    transform: scale(1.02);
     transition: transform 0.3s ease;
 }
 </style>
 """
         return infographic_html
+
+    def _generate_icon_illustration(self, theme: str, **kwargs) -> str:
+        """Génère une collection d'icônes CSS pour illustrer les concepts Seminary."""
+        icons_data = [
+            {"icon": "🏔️", "title": "Cadre montagnard", "desc": "Environnement naturel inspirant"},
+            {"icon": "🤝", "title": "Team building", "desc": "Renforcement des liens d'équipe"},
+            {"icon": "🎯", "title": "Objectifs clairs", "desc": "Définition d'objectifs communs"},
+            {"icon": "💡", "title": "Innovation", "desc": "Stimulation de la créativité"},
+            {"icon": "📈", "title": "Résultats", "desc": "Amélioration des performances"},
+            {"icon": "🌲", "title": "Nature", "desc": "Ressourcement en pleine nature"}
+        ]
+        
+        icons_html = """
+<div class="seminary-icons-grid" style="
+    margin: 2rem 0;
+    padding: 2rem;
+    background: linear-gradient(135deg, #f8f9ff 0%, #e8edff 100%);
+    border-radius: 16px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+">
+    <h3 style="text-align: center; color: #7E22CE; margin-bottom: 2rem; font-weight: 600;">
+        🎯 Les atouts des séminaires Seminary
+    </h3>
+    
+    <div class="icons-container" style="
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 1rem;
+    ">
+"""
+        
+        for i, icon_data in enumerate(icons_data):
+            icons_html += f"""
+        <div class="icon-item" style="
+            text-align: center;
+            padding: 1.5rem;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(126, 34, 206, 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            animation: seminary-icon-appear 0.6s ease-out {i * 0.1}s both;
+        " onmouseover="this.style.transform='translateY(-5px)'; this.style.boxShadow='0 8px 24px rgba(126, 34, 206, 0.2)'" 
+           onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 8px rgba(126, 34, 206, 0.1)'">
+            <div style="font-size: 2.5rem; margin-bottom: 1rem;">{icon_data['icon']}</div>
+            <h4 style="
+                color: #7E22CE; 
+                margin: 0 0 0.5rem 0; 
+                font-size: 1.1rem; 
+                font-weight: 600;
+            ">{icon_data['title']}</h4>
+            <p style="
+                color: #666; 
+                margin: 0; 
+                font-size: 0.9rem; 
+                line-height: 1.4;
+            ">{icon_data['desc']}</p>
+        </div>"""
+        
+        icons_html += """
+    </div>
+    
+    <div style="text-align: center; margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid #ddd;">
+        <p style="color: #666; font-size: 0.9rem; margin: 0;">
+            🌟 Une approche complète pour dynamiser vos équipes dans un cadre exceptionnel
+        </p>
+    </div>
+</div>
+
+<style>
+@keyframes seminary-icon-appear {
+    from {
+        opacity: 0;
+        transform: scale(0.8);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+</style>
+"""
+        return icons_html
+
+    def _generate_diagram_css(self, theme: str, **kwargs) -> str:
+        """Génère un diagramme CSS pour illustrer les flux et processus Seminary."""
+        diagram_type = kwargs.get('diagram_type', 'process')
+        
+        if diagram_type == 'process':
+            return self._generate_process_diagram(theme)
+        elif diagram_type == 'organizational':
+            return self._generate_org_diagram(theme)
+        else:
+            return self._generate_process_diagram(theme)  # Fallback par défaut
+    
+    def _generate_process_diagram(self, theme: str) -> str:
+        """Génère un diagramme de processus Seminary."""
+        process_steps = [
+            {"title": "Analyse", "desc": "Évaluation des besoins", "color": "#7E22CE"},
+            {"title": "Conception", "desc": "Programme sur mesure", "color": "#A94BE0"},
+            {"title": "Exécution", "desc": "Séminaire dans les Vosges", "color": "#9F4BBD"},
+            {"title": "Suivi", "desc": "Accompagnement post-formation", "color": "#8B5A9F"}
+        ]
+        
+        diagram_html = """
+<div class="seminary-process-diagram" style="
+    margin: 2rem 0;
+    padding: 2rem;
+    background: linear-gradient(135deg, #f8f9ff 0%, #e8edff 100%);
+    border-radius: 16px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+">
+    <h3 style="text-align: center; color: #7E22CE; margin-bottom: 2rem; font-weight: 600;">
+        🔄 Processus Seminary - De A à Z
+    </h3>
+    
+    <div class="process-flow" style="
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 1rem;
+    ">
+"""
+        
+        for i, step in enumerate(process_steps):
+            is_last = i == len(process_steps) - 1
+            
+            diagram_html += f"""
+        <div class="process-step" style="
+            flex: 1;
+            min-width: 200px;
+            text-align: center;
+            animation: seminary-step-slide-in 0.8s ease-out {i * 0.2}s both;
+        ">
+            <div class="step-circle" style="
+                width: 80px;
+                height: 80px;
+                background: {step['color']};
+                border-radius: 50%;
+                margin: 0 auto 1rem auto;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: white;
+                font-weight: 600;
+                font-size: 1.2rem;
+                box-shadow: 0 4px 12px {step['color']}40;
+                transition: transform 0.3s ease;
+            " onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
+                {i + 1}
+            </div>
+            
+            <h4 style="
+                color: {step['color']};
+                margin: 0 0 0.5rem 0;
+                font-size: 1.1rem;
+                font-weight: 600;
+            ">{step['title']}</h4>
+            
+            <p style="
+                color: #666;
+                margin: 0;
+                font-size: 0.9rem;
+                line-height: 1.4;
+            ">{step['desc']}</p>
+        </div>"""
+            
+            # Ajouter une flèche sauf pour le dernier élément
+            if not is_last:
+                diagram_html += f"""
+        <div class="arrow" style="
+            color: #7E22CE;
+            font-size: 1.5rem;
+            animation: seminary-arrow-pulse 2s ease-in-out infinite {i * 0.2}s;
+        ">→</div>"""
+        
+        diagram_html += """
+    </div>
+    
+    <div style="text-align: center; margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid #ddd;">
+        <p style="color: #666; font-size: 0.9rem; margin: 0;">
+            ⚡ Un processus éprouvé pour maximiser l'impact de vos séminaires
+        </p>
+    </div>
+</div>
+
+<style>
+@keyframes seminary-step-slide-in {
+    from {
+        opacity: 0;
+        transform: translateX(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes seminary-arrow-pulse {
+    0%, 100% { opacity: 0.5; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.1); }
+}
+</style>
+"""
+        return diagram_html
+    
+    def _generate_org_diagram(self, theme: str) -> str:
+        """Génère un diagramme organisationnel Seminary."""
+        return """
+<div class="seminary-org-diagram" style="
+    margin: 2rem 0;
+    padding: 2rem;
+    background: linear-gradient(135deg, #7E22CE10, #A94BE020);
+    border-radius: 16px;
+    text-align: center;
+">
+    <h3 style="color: #7E22CE; margin-bottom: 2rem;">🏢 Structure d'accompagnement Seminary</h3>
+    <div style="display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 2rem;">
+        <div style="padding: 1rem; background: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(126,34,206,0.1);">
+            <strong>👥 Équipe</strong><br>
+            <small>Participants</small>
+        </div>
+        <div style="color: #7E22CE; font-size: 1.5rem;">↕️</div>
+        <div style="padding: 1rem; background: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(126,34,206,0.1);">
+            <strong>🎯 Facilitateur</strong><br>
+            <small>Expert Seminary</small>
+        </div>
+        <div style="color: #7E22CE; font-size: 1.5rem;">↕️</div>
+        <div style="padding: 1rem; background: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(126,34,206,0.1);">
+            <strong>🏔️ Environnement</strong><br>
+            <small>Vosges</small>
+        </div>
+    </div>
+</div>"""
+
+    def _generate_default_illustration(self, theme: str) -> str:
+        """Génère une illustration par défaut quand aucun type spécifique n'est demandé."""
+        return """
+<div class="seminary-default-illustration" style="
+    margin: 2rem 0;
+    padding: 2rem;
+    background: linear-gradient(135deg, #7E22CE 0%, #A94BE0 100%);
+    border-radius: 16px;
+    color: white;
+    text-align: center;
+    box-shadow: 0 8px 24px rgba(126, 34, 206, 0.3);
+">
+    <div style="font-size: 4rem; margin-bottom: 1rem;">🏔️</div>
+    <h3 style="margin: 0 0 1rem 0; font-size: 1.5rem; font-weight: 600;">
+        Seminary - Séminaires d'Exception dans les Vosges
+    </h3>
+    <p style="margin: 0; font-size: 1.1rem; opacity: 0.9; line-height: 1.6;">
+        Transformez votre équipe dans un cadre naturel inspirant.<br>
+        Des résultats durables grâce à notre expertise unique.
+    </p>
+    
+    <div style="
+        margin-top: 2rem;
+        padding: 1rem;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+        backdrop-filter: blur(10px);
+    ">
+        <div style="display: flex; justify-content: center; gap: 2rem; flex-wrap: wrap;">
+            <div><strong>🎯</strong> Team Building</div>
+            <div><strong>📈</strong> Performance</div>
+            <div><strong>🌲</strong> Nature</div>
+            <div><strong>🤝</strong> Cohésion</div>
+        </div>
+    </div>
+</div>"""
 
     def suggest_illustrations_for_article(self, article_content: str, title: str) -> List[Dict]:
         """

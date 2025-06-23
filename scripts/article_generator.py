@@ -656,19 +656,26 @@ class ArticleGenerator:
                 
                 for i, suggestion in enumerate(illustration_suggestions[:max_illustrations]):
                     try:
-                        # Extraire le type d'illustration et les autres paramètres
-                        illustration_type = suggestion.pop('illustration_type', 'icon')
+                        # Extraire le type d'illustration sans modifier le dictionnaire original
+                        illustration_type = suggestion.get('illustration_type', 'icon')
+                        suggestion_copy = suggestion.copy()
+                        suggestion_copy.pop('illustration_type', None)  # Enlever le type du copy
                         
                         # Générer l'illustration CSS/SVG
                         illustration_html = self.image_handler.generate_css_illustration(
                             illustration_type,
                             'professional',
-                            **suggestion
+                            **suggestion_copy
                         )
                         
-                        # Créer un conteneur pour l'illustration
+                        # Créer un conteneur pour l'illustration avec HTML correctement inséré
                         illustration_div = soup.new_tag('div', class_='visual-illustration')
-                        illustration_div.string = illustration_html
+                        
+                        # CORRECTION CRITIQUE: Utiliser BeautifulSoup pour parser le HTML
+                        illustration_soup = BeautifulSoup(illustration_html, 'html.parser')
+                        for element in illustration_soup:
+                            if element.name:  # Ignorer les éléments texte
+                                illustration_div.append(element)
                         
                         # Insérer à des positions stratégiques
                         paragraphs = content_div.find_all('p')
