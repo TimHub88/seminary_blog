@@ -1130,7 +1130,7 @@ class ImageHandler:
         # Suggestions basées sur le contenu
         if any(word in content_lower for word in ['statistique', 'pourcentage', '%', 'étude', 'résultat']):
             suggestions.append({
-                'type': 'chart',
+                'illustration_type': 'chart',
                 'chart_type': 'bar',
                 'title': 'Graphique statistiques',
                 'description': 'Graphique en barres avec données sur les séminaires'
@@ -1138,14 +1138,14 @@ class ImageHandler:
         
         if any(word in content_lower for word in ['processus', 'étape', 'méthode', 'comment']):
             suggestions.append({
-                'type': 'infographic',
+                'illustration_type': 'infographic',
                 'title': 'Infographie processus',
                 'description': 'Étapes du processus Seminary'
             })
         
         if any(word in content_lower for word in ['performance', 'amélioration', 'progression', 'succès']):
             suggestions.append({
-                'type': 'chart',
+                'illustration_type': 'chart',
                 'chart_type': 'progress',
                 'title': 'Graphique de progression',
                 'description': 'Cercle de progression pour montrer l\'amélioration'
@@ -1153,7 +1153,7 @@ class ImageHandler:
         
         if any(word in content_lower for word in ['organisation', 'flux', 'workflow']):
             suggestions.append({
-                'type': 'diagram',
+                'illustration_type': 'diagram',
                 'diagram_type': 'process',
                 'title': 'Diagramme de flux',
                 'description': 'Flux d\'organisation Seminary'
@@ -1162,7 +1162,7 @@ class ImageHandler:
         # Suggestion par défaut
         if not suggestions:
             suggestions.append({
-                'type': 'icon',
+                'illustration_type': 'icon',
                 'title': 'Icônes thématiques',
                 'description': 'Collection d\'icônes représentant les séminaires'
             })

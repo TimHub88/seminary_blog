@@ -473,14 +473,20 @@ class ArticleGenerator:
         """
         logger.info("=== PASS 4: INTÉGRATION SEMINARY ===")
         
-        # Générer le HTML complet
-        final_html = self.article_template.render(
-            title=article_data['metadata'].get('title', 'Article Seminary'),
-            meta_description=article_data['metadata'].get('description', ''),
-            content=article_data['content'],
-            date=datetime.now().strftime('%Y-%m-%d'),
-            author='Seminary Blog Bot'
-        )
+        # Générer le HTML complet avec toutes les variables du template
+        template_vars = {
+            'article_title': article_data['metadata'].get('title', 'Article Seminary'),
+            'meta_description': article_data['metadata'].get('description', ''),
+            'article_content': article_data['content'],
+            'publish_date': datetime.now().strftime('%d/%m/%Y'),
+            'reading_time': max(1, article_data.get('word_count', 400) // 200),  # Estimation 200 mots/min
+            'filename': self.generate_filename(article_data['metadata']),
+            'header_html': '',  # Templates séparés dans le futur
+            'footer_html': '',
+            'article_subtitle': ''
+        }
+        
+        final_html = self.article_template.render(**template_vars)
         
         # Intégrer les liens Seminary
         seminary_result = self.seminary_integrator.process_article(
@@ -606,9 +612,12 @@ class ArticleGenerator:
                 
                 for i, suggestion in enumerate(illustration_suggestions[:max_illustrations]):
                     try:
+                        # Extraire le type d'illustration et les autres paramètres
+                        illustration_type = suggestion.pop('illustration_type', 'icon')
+                        
                         # Générer l'illustration CSS/SVG
                         illustration_html = self.image_handler.generate_css_illustration(
-                            suggestion['type'],
+                            illustration_type,
                             'professional',
                             **suggestion
                         )
@@ -623,10 +632,10 @@ class ArticleGenerator:
                             # Insérer après le paragraphe au milieu
                             middle_p = paragraphs[len(paragraphs) // 2]
                             middle_p.insert_after(illustration_div)
-                            visual_elements_added.append(f"Illustration {suggestion['type']}: {suggestion['title']}")
+                            visual_elements_added.append(f"Illustration {illustration_type}: {suggestion.get('title', 'Sans titre')}")
                         
                     except Exception as e:
-                        logger.error(f"Erreur lors de l'ajout d'illustration {suggestion['type']}: {e}")
+                        logger.error(f"Erreur lors de l'ajout d'illustration {illustration_type}: {e}")
                 
         except Exception as e:
             logger.error(f"Erreur lors de l'ajout d'illustrations CSS: {e}")
