@@ -803,8 +803,16 @@ class ArticleGenerator:
             
             if word_count < 100:
                 logger.error(f"❌ ÉCHEC CRITIQUE: Nombre de mots insuffisant ({word_count} mots)")
-                logger.error("   Aucun article ne sera créé pour éviter les fichiers vides")
-                return None
+                logger.error("   Tentative avec article de fallback...")
+                
+                try:
+                    from .fallback_article_generator import create_fallback_article
+                    fallback_path = create_fallback_article(self.generation_config['target_word_count'])
+                    logger.info(f"✅ Article de fallback créé: {fallback_path}")
+                    return fallback_path
+                except Exception as e:
+                    logger.error(f"❌ Échec du fallback: {e}")
+                    return None
             
             # Vérifier la présence de métadonnées essentielles
             metadata = article_data.get('metadata', {})
@@ -838,8 +846,16 @@ class ArticleGenerator:
             
             if final_word_count < 120:  # Seuil abaissé de 150 à 120 mots
                 logger.error(f"❌ ÉCHEC CRITIQUE: Article final trop court ({final_word_count} mots)")
-                logger.error("   Aucun article ne sera créé pour éviter les fichiers vides")
-                return None
+                logger.error("   Tentative avec article de fallback...")
+                
+                try:
+                    from .fallback_article_generator import create_fallback_article
+                    fallback_path = create_fallback_article(self.generation_config['target_word_count'])
+                    logger.info(f"✅ Article de fallback créé: {fallback_path}")
+                    return fallback_path
+                except Exception as e:
+                    logger.error(f"❌ Échec du fallback: {e}")
+                    return None
             
             logger.info(f"✅ Article final validé: {final_word_count} mots")
             
@@ -896,8 +912,11 @@ class ArticleGenerator:
             logger.error("   Tentative de création d'un article de fallback...")
             
             try:
+                # Importer le générateur de fallback
+                from .fallback_article_generator import create_fallback_article
+                
                 # Créer un article de fallback pour éviter l'échec complet
-                fallback_path = create_fallback_article()
+                fallback_path = create_fallback_article(self.generation_config['target_word_count'])
                 logger.info(f"✅ Article de fallback créé avec succès: {fallback_path}")
                 
                 # Mettre à jour le contexte avec l'article de fallback
