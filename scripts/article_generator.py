@@ -64,7 +64,7 @@ class ArticleGenerator:
             'chutes_model': 'deepseek-ai/DeepSeek-R1-0528',  # Modèle officiel Chutes AI
             'min_article_words': 600,  # Objectifs plus réalistes
             'max_article_words': 1500,
-            'target_word_count': 900,  # Plus court pour éviter les timeouts
+            'target_word_count': 400,  # Cible réaliste pour l'API
             'seo_score_threshold': 70,  # Seuil plus permissif
             'max_improvement_attempts': 2,  # Moins d'améliorations
             'api_timeout': 180,  # 3 minutes pour DeepSeek-R1
@@ -74,23 +74,30 @@ class ArticleGenerator:
         # Templates de prompts
         self.prompts = {
             'creative_generation': '''
-            Écris DIRECTEMENT un article de blog de {target_words} mots sur les séminaires d'entreprise dans les Vosges.
+            Écris un article de blog complet de minimum {target_words} mots sur les séminaires d'entreprise dans les Vosges.
 
-            IMPORTANT: Ne montre pas ton processus de réflexion, donne directement l'article final.
+            IMPORTANT: 
+            - Écris un article substantiel et développé
+            - Minimum {target_words} mots requis
+            - Ne montre pas ton processus de réflexion
 
-            STRUCTURE:
-            <h1>Titre principal</h1>
-            <p>Introduction engageante</p>
-            <h2>Section 1</h2>
-            <p>Contenu...</p>
-            <h2>Section 2</h2>
-            <p>Contenu...</p>
-            <h2>Conclusion</h2>
-            <p>Appel à l'action</p>
+            STRUCTURE REQUISE:
+            <h1>Titre principal accrocheur</h1>
+            <p>Introduction engageante de 2-3 phrases</p>
+            <h2>Les avantages des Vosges pour les séminaires</h2>
+            <p>Développe les atouts: nature, accessibilité, équipements...</p>
+            <h2>Activités team building incontournables</h2>
+            <p>Détaille les activités possibles avec exemples concrets...</p>
+            <h2>Organiser son séminaire: conseils pratiques</h2>
+            <p>Donne des conseils détaillés pour l'organisation...</p>
+            <h2>Pourquoi choisir Seminary pour votre événement</h2>
+            <p>Présente les services et expertise de Seminary...</p>
 
-            MOTS-CLÉS: séminaire d'entreprise, Vosges, team building, formation, nature, montagne
+            MOTS-CLÉS À INTÉGRER: séminaire d'entreprise, Vosges, team building, formation, nature, montagne, Seminary
 
             CONTEXTE EXISTANT: {context}
+            
+            DÉVELOPPE CHAQUE SECTION EN DÉTAIL POUR ATTEINDRE {target_words} MOTS MINIMUM.
             ''',
             
             'seo_improvement': '''
@@ -816,12 +823,12 @@ class ArticleGenerator:
             final_content = improved_article.get('content', '')
             final_word_count = improved_article.get('word_count', 0)
             
-            if not final_content or len(final_content.strip()) < 300:
+            if not final_content or len(final_content.strip()) < 250:  # Seuil abaissé de 300 à 250 caractères
                 logger.error(f"❌ ÉCHEC CRITIQUE: Contenu final trop court ({len(final_content)} caractères)")
                 logger.error("   Aucun article ne sera créé pour éviter les fichiers vides")
                 return None
             
-            if final_word_count < 150:
+            if final_word_count < 120:  # Seuil abaissé de 150 à 120 mots
                 logger.error(f"❌ ÉCHEC CRITIQUE: Article final trop court ({final_word_count} mots)")
                 logger.error("   Aucun article ne sera créé pour éviter les fichiers vides")
                 return None
