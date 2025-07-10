@@ -751,6 +751,36 @@ class ArticleGenerator:
         except Exception as e:
             logger.error(f"Erreur validation HTML DOM: {e}")
             return False
+
+    # ---------------------------------------------------
+    # Vérification / correction du <h1>
+    # ---------------------------------------------------
+    def _ensure_valid_title(self, html_content: str) -> str:
+        """Garantit un <h1> entre 35 et 60 caractères. Corrige ou insère si nécessaire."""
+        import re
+        h1_match = re.search(r'<h1[^>]*>(.*?)</h1>', html_content, re.IGNORECASE | re.DOTALL)
+        title_text = re.sub(r'<[^>]+>', '', h1_match.group(1)).strip() if h1_match else ''
+
+        if h1_match and 35 <= len(title_text) <= 80:
+            return html_content
+
+        # Extraire premier paragraphe propre pour générer un titre
+        p_match = re.search(r'<p[^>]*>(.*?)</p>', html_content, re.IGNORECASE | re.DOTALL)
+        paragraph = re.sub(r'<[^>]+>', '', p_match.group(1)).strip() if p_match else ''
+        words = paragraph.split()[:12]
+        fallback_title = ' '.join(words)
+        if len(fallback_title) < 35:
+            fallback_title += ' - Séminaire dans les Vosges'
+        if len(fallback_title) > 60:
+            fallback_title = fallback_title[:60].rsplit(' ', 1)[0] + '...'
+
+        # Remplacement ou insertion
+        if h1_match:
+            html_content = re.sub(r'<h1[^>]*>.*?</h1>', f'<h1>{fallback_title}</h1>', html_content, flags=re.IGNORECASE | re.DOTALL)
+        else:
+            html_content = f'<h1>{fallback_title}</h1>\n' + html_content
+
+        return html_content
     
     def _inject_featured_image(self, html: str, image_path: str, image_info: Dict) -> str:
         """Injecte une image mise en avant dans l'article (méthode legacy)."""
