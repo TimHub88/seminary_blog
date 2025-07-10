@@ -85,6 +85,10 @@ class ArticleGenerator:
             - Minimum {target_words} mots requis
             - Ne montre pas ton processus de réflexion
 
+            CONTRAINTES TITRE:
+            - Le <h1> doit contenir entre 35 et 60 caractères
+            - Il doit inclure au moins un mot-clé parmi: séminaire, Vosges, entreprise
+
             STRUCTURE REQUISE:
             <h1>Titre principal accrocheur</h1>
             <p>Introduction engageante de 2-3 phrases</p>
@@ -357,7 +361,7 @@ class ArticleGenerator:
         generated_content = self.call_openrouter_api(
             prompt, 
             max_tokens=self.generation_config['max_tokens_per_call'],  # Limite pour éviter les timeouts
-            temperature=0.6  # Température plus basse pour DeepSeek-R1
+            temperature=0.5  # Température plus basse pour cohérence
         )
         
         if not generated_content:
@@ -365,6 +369,9 @@ class ArticleGenerator:
         
         # Nettoyer et structurer le contenu
         cleaned_content = self._clean_generated_content(generated_content)
+
+        # S'assurer que le titre est valide
+        cleaned_content = self._ensure_valid_title(cleaned_content)
         
         # Extraire les métadonnées
         metadata = self._extract_metadata_from_content(cleaned_content)
@@ -856,7 +863,7 @@ class ArticleGenerator:
             
             # Vérifier la présence de métadonnées essentielles
             metadata = article_data.get('metadata', {})
-            if not metadata.get('title') or len(metadata.get('title', '').strip()) < 10:
+            if not metadata.get('title') or len(metadata.get('title', '').strip()) < 20:
                 logger.error("❌ ÉCHEC CRITIQUE: Titre manquant ou trop court")
                 logger.error("   Aucun article ne sera créé pour éviter les fichiers vides")
                 return None
