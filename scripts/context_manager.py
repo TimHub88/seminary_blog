@@ -242,28 +242,26 @@ Article: {content_preview}
 Résumé ({max_words} mots):"""
         
         try:
-            # Configuration de l'appel API Chutes AI
+            # Configuration de l'appel API OpenRouter
             headers = {
                 'Authorization': f'Bearer {api_key}',
                 'Content-Type': 'application/json'
             }
             
-            # Format officiel Chutes AI chat/completions
+            # Format OpenRouter chat/completions
             payload = {
-                'model': 'deepseek-ai/DeepSeek-R1-0528',
+                'model': 'deepseek/deepseek-r1-0528:free',
                 'messages': [
                     {
                         'role': 'user',
                         'content': prompt
                     }
                 ],
-                'stream': False,
                 'max_tokens': max_words * 2,  # Marge de sécurité
                 'temperature': 0.3  # Résumé précis, peu créatif
             }
             
-            # URL officielle Chutes AI
-            api_url = "https://llm.chutes.ai/v1/chat/completions"
+            api_url = "https://openrouter.ai/api/v1/chat/completions"
             
             response = requests.post(api_url, headers=headers, json=payload, timeout=120)  # 2 minutes pour DeepSeek-R1
             response.raise_for_status()

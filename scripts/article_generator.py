@@ -38,16 +38,16 @@ logger = logging.getLogger(__name__)
 class ArticleGenerator:
     """Générateur d'articles complet avec pipeline 4-pass."""
     
-    def __init__(self, chutes_api_key: str, unsplash_access_key: Optional[str] = None, unsplash_secret_key: Optional[str] = None):
+    def __init__(self, openrouter_api_key: str, unsplash_access_key: Optional[str] = None, unsplash_secret_key: Optional[str] = None):
         """
         Initialise le générateur d'articles.
         
         Args:
-            chutes_api_key: Clé API Chutes AI
+            openrouter_api_key: Clé API OpenRouter
             unsplash_access_key: Clé d'accès Unsplash API
             unsplash_secret_key: Clé secrète Unsplash API (pour production)
         """
-        self.chutes_api_key = chutes_api_key
+        self.openrouter_api_key = openrouter_api_key
         self.unsplash_access_key = unsplash_access_key
         self.unsplash_secret_key = unsplash_secret_key
         
@@ -57,12 +57,12 @@ class ArticleGenerator:
         self.image_handler = ImageHandler(unsplash_access_key, unsplash_secret_key)
         self.seminary_integrator = SeminaryIntegrator()
         
-        # Configuration de génération - Optimisée pour DeepSeek-R1
+        # Configuration de génération - OpenRouter
         self.generation_config = {
             'max_retries': 3,  # Moins de retries car ils sont longs
             'retry_delay': 20,  # Délai réduit
-            'chutes_api_url': 'https://llm.chutes.ai/v1/chat/completions',  # URL officielle Chutes AI
-            'chutes_model': 'deepseek-ai/DeepSeek-R1-0528',  # Modèle officiel Chutes AI
+            'openrouter_api_url': 'https://openrouter.ai/api/v1/chat/completions',  # Endpoint OpenRouter
+            'openrouter_model': 'deepseek/deepseek-r1-0528:free',  # Modèle gratuit
             'min_article_words': 600,  # Objectifs plus réalistes
             'max_article_words': 1500,
             'target_word_count': 400,  # Cible réaliste pour l'API
@@ -218,9 +218,9 @@ class ArticleGenerator:
             '''
             return Template(fallback_template)
     
-    def call_chutes_api(self, prompt: str, max_tokens: int = 2000, temperature: float = 0.7) -> Optional[str]:
+    def call_openrouter_api(self, prompt: str, max_tokens: int = 2000, temperature: float = 0.7) -> Optional[str]:
         """
-        Appelle l'API Chutes AI avec le format officiel chat/completions.
+        Appelle l'API OpenRouter avec le format officiel chat/completions.
         
         Args:
             prompt: Prompt à envoyer
@@ -231,19 +231,19 @@ class ArticleGenerator:
             Réponse générée ou None si échec
         """
         # VALIDATION CRITIQUE: Vérifier la clé API
-        if not self.chutes_api_key or self.chutes_api_key.strip() == "":
-            logger.error("❌ ERREUR CRITIQUE: CHUTES_API_KEY non définie ou vide")
+        if not self.openrouter_api_key or self.openrouter_api_key.strip() == "":
+            logger.error("❌ ERREUR CRITIQUE: OPENROUTER_API_KEY non définie ou vide")
             logger.error("   Le workflow GitHub Actions doit définir cette variable d'environnement")
-            raise ValueError("CHUTES_API_KEY manquante - impossible de continuer")
+            raise ValueError("OPENROUTER_API_KEY manquante - impossible de continuer")
         
         headers = {
-            'Authorization': f'Bearer {self.chutes_api_key}',
+            'Authorization': f'Bearer {self.openrouter_api_key}',
             'Content-Type': 'application/json'
         }
         
         # Format officiel Chutes AI chat/completions
         payload = {
-            'model': self.generation_config['chutes_model'],
+            'model': self.generation_config['openrouter_model'],
             'messages': [
                 {
                     'role': 'user',
@@ -257,12 +257,12 @@ class ArticleGenerator:
         
         for attempt in range(self.generation_config['max_retries']):
             try:
-                logger.info(f"Appel Chutes AI (tentative {attempt + 1}/{self.generation_config['max_retries']})")
-                logger.info(f"Modèle: {self.generation_config['chutes_model']}")
-                logger.info(f"Clé API: {self.chutes_api_key[:10]}...")
+                logger.info(f"Appel OpenRouter (tentative {attempt + 1}/{self.generation_config['max_retries']})")
+                logger.info(f"Modèle: {self.generation_config['openrouter_model']}")
+                logger.info(f"Clé API: {self.openrouter_api_key[:10]}...")
                 
                 response = requests.post(
-                    self.generation_config['chutes_api_url'],
+                    self.generation_config['openrouter_api_url'],
                     headers=headers,
                     json=payload,
                     timeout=self.generation_config['api_timeout']  # 3 minutes pour DeepSeek-R1
@@ -273,7 +273,7 @@ class ArticleGenerator:
                 # VALIDATION CRITIQUE: Vérifier le status code
                 if response.status_code == 401:
                     logger.error("❌ ERREUR 401: Clé API invalide ou expirée")
-                    logger.error("   Vérifiez la variable CHUTES_API_KEY dans GitHub Secrets")
+                    logger.error("   Vérifiez la variable OPENROUTER_API_KEY dans GitHub Secrets")
                     raise ValueError("Authentification API échouée")
                 elif response.status_code == 429:
                     logger.error("❌ ERREUR 429: Limite de taux API atteinte")
@@ -330,7 +330,7 @@ class ArticleGenerator:
                 logger.debug(f"Détails de l'erreur: {str(e)}")
                 break
         
-        logger.error("❌ ÉCHEC CRITIQUE: Impossible de générer du contenu après tous les retries")
+        logger.error("❌ ÉCHEC CRITIQUE: Impossible de générer du contenu après tous les retries (OpenRouter)")
         logger.error("   Cela empêchera la création d'articles vides")
         return None
     
@@ -351,7 +351,7 @@ class ArticleGenerator:
             target_words=self.generation_config['target_word_count']
         )
         
-        generated_content = self.call_chutes_api(
+        generated_content = self.call_openrouter_api(
             prompt, 
             max_tokens=self.generation_config['max_tokens_per_call'],  # Limite pour éviter les timeouts
             temperature=0.6  # Température plus basse pour DeepSeek-R1
@@ -441,7 +441,7 @@ class ArticleGenerator:
                 seo_issues=issues_text
             )
             
-            improved_content = self.call_chutes_api(
+            improved_content = self.call_openrouter_api(
                 prompt,
                 max_tokens=3500,
                 temperature=0.5  # Moins créatif, plus focalisé
@@ -813,10 +813,10 @@ class ArticleGenerator:
         
         try:
             # VALIDATION PRÉALABLE: Vérifier la clé API
-            if not self.chutes_api_key or self.chutes_api_key.strip() == "":
-                logger.error("❌ ARRÊT IMMÉDIAT: CHUTES_API_KEY non définie")
+            if not self.openrouter_api_key or self.openrouter_api_key.strip() == "":
+                logger.error("❌ ARRÊT IMMÉDIAT: OPENROUTER_API_KEY non définie")
                 logger.error("   Impossible de continuer sans clé API valide")
-                raise ValueError("CHUTES_API_KEY manquante")
+                raise ValueError("OPENROUTER_API_KEY manquante")
             
             # Mettre à jour le contexte
             context = self.context_manager.get_context_for_ai()
@@ -947,7 +947,7 @@ class ArticleGenerator:
                 logger.info(f"✅ Fichier validé: {file_size} bytes")
             
             # Mettre à jour le contexte avec le nouvel article
-            self.context_manager.update_context(self.chutes_api_key)
+            self.context_manager.update_context(self.openrouter_api_key)
             
             # Statistiques finales
             duration = time.time() - start_time
@@ -973,7 +973,7 @@ class ArticleGenerator:
                 logger.info(f"✅ Article de fallback créé avec succès: {fallback_path}")
                 
                 # Mettre à jour le contexte avec l'article de fallback
-                self.context_manager.update_context(self.chutes_api_key)
+                self.context_manager.update_context(self.openrouter_api_key)
                 
                 return fallback_path
                 
@@ -986,7 +986,7 @@ class ArticleGenerator:
 def main():
     """Point d'entrée principal pour l'exécution standalone."""
     parser = argparse.ArgumentParser(description="Article Generator - Seminary Blog Pipeline")
-    parser.add_argument('--chutes-api-key', required=True, help='Clé API Chutes AI')
+    parser.add_argument('--openrouter-api-key', required=True, help='Clé API OpenRouter')
     parser.add_argument('--unsplash-access-key', help='Clé d\'accès Unsplash API (optionnel)')
     parser.add_argument('--unsplash-secret-key', help='Clé secrète Unsplash API (pour production, optionnel)')
     parser.add_argument('--update-context', action='store_true', help='Mettre à jour le contexte uniquement')
@@ -997,15 +997,15 @@ def main():
     if args.update_context:
         # Mise à jour du contexte uniquement
         context_manager = ContextManager()
-        context_manager.update_context(args.chutes_api_key)
+        context_manager.update_context(args.openrouter_api_key)
         print("✅ Contexte mis à jour")
         return
     
     if args.dry_run:
         print("🧪 MODE TEST - Pas de génération réelle")
         # Test de connexion API
-        generator = ArticleGenerator(args.chutes_api_key, args.unsplash_access_key, args.unsplash_secret_key)
-        test_response = generator.call_chutes_api("Test de connexion", max_tokens=10)
+        generator = ArticleGenerator(args.openrouter_api_key, args.unsplash_access_key, args.unsplash_secret_key)
+        test_response = generator.call_openrouter_api("Test de connexion", max_tokens=10)
         if test_response:
             print("✅ Connexion API réussie")
         else:
@@ -1013,7 +1013,7 @@ def main():
         return
     
     # Génération normale
-    generator = ArticleGenerator(args.chutes_api_key, args.unsplash_access_key, args.unsplash_secret_key)
+    generator = ArticleGenerator(args.openrouter_api_key, args.unsplash_access_key, args.unsplash_secret_key)
     
     result_path = generator.generate_full_article()
     
