@@ -20,7 +20,7 @@ def check_environment():
     
     # Vérifier les variables d'environnement
     print("\n📋 Variables d'environnement:")
-    env_vars = ['CHUTES_API_KEY', 'UNSPLASH_ACCESS_KEY', 'LOG_LEVEL']
+    env_vars = ['OPENROUTER_API_KEY', 'UNSPLASH_ACCESS_KEY', 'LOG_LEVEL']
     for var in env_vars:
         value = os.getenv(var)
         if value:
@@ -123,9 +123,9 @@ def test_api_connection():
     """Test basique de connexion API (sans vraie clé)."""
     print("\n🌐 Test API:")
     
-    chutes_key = os.getenv('CHUTES_API_KEY')
+    chutes_key = os.getenv('OPENROUTER_API_KEY')
     if not chutes_key:
-        print("  ⚠️ CHUTES_API_KEY manquante - impossible de tester")
+        print("  ⚠️ OPENROUTER_API_KEY manquante - impossible de tester")
         return
     
     print("  ℹ️ Clé API trouvée - test de format...")
@@ -147,8 +147,8 @@ def generate_report():
     issues = []
     
     # Vérifier les variables critiques
-    if not os.getenv('CHUTES_API_KEY'):
-        issues.append("CHUTES_API_KEY manquante")
+    if not os.getenv('OPENROUTER_API_KEY'):
+        issues.append("OPENROUTER_API_KEY manquante")
     
     # Vérifier les fichiers critiques
     critical_files = [
@@ -167,7 +167,7 @@ def generate_report():
         for issue in issues:
             print(f"  • {issue}")
         print("\n🔧 Actions recommandées:")
-        print("  1. Configurer CHUTES_API_KEY dans GitHub Secrets")
+        print("  1. Configurer OPENROUTER_API_KEY dans GitHub Secrets")
         print("  2. Vérifier que tous les fichiers sont présents")
         print("  3. Installer toutes les dépendances (pip install -r requirements.txt)")
     else:

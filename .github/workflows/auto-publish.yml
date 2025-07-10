@@ -26,7 +26,7 @@ jobs:
     
     # 🔐 Variables d'environnement avec secrets
     env:
-      CHUTES_API_KEY: ${{ secrets.CHUTES_API_KEY }}
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
       UNSPLASH_ACCESS_KEY: ${{ secrets.UNSPLASH_ACCESS_KEY }}
       UNSPLASH_SECRET_KEY: ${{ secrets.UNSPLASH_SECRET_KEY }}
     
@@ -86,8 +86,8 @@ jobs:
         mkdir -p articles data/image_cache images
         
         # Vérifier les clés API
-        if [ -z "$CHUTES_API_KEY" ]; then
-          echo "❌ CHUTES_API_KEY manquante"
+        if [ -z "$OPENROUTER_API_KEY" ]; then
+          echo "❌ OPENROUTER_API_KEY manquante"
           exit 1
         fi
         
@@ -98,7 +98,7 @@ jobs:
       run: |
         echo "🔄 Mise à jour du contexte des articles..."
         python scripts/context_manager.py \
-          --api-key "$CHUTES_API_KEY" \
+          --api-key "$OPENROUTER_API_KEY" \
           --show-context
     
     - name: 🤖 Generate New Article
@@ -114,7 +114,7 @@ jobs:
         
         # Générer l'article avec gestion d'erreur
                 if python scripts/article_generator.py \
-          --chutes-api-key "$CHUTES_API_KEY" \
+          --openrouter-api-key "$OPENROUTER_API_KEY" \
           --unsplash-access-key "$UNSPLASH_ACCESS_KEY" \
           --unsplash-secret-key "$UNSPLASH_SECRET_KEY" > generation.log 2>&1; then
           
