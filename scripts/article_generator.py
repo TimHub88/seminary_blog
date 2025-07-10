@@ -65,7 +65,7 @@ class ArticleGenerator:
             'max_retries': 3,  # Moins de retries car ils sont longs
             'retry_delay': 20,  # Délai réduit
             'openrouter_api_url': 'https://openrouter.ai/api/v1/chat/completions',  # Endpoint OpenRouter
-            'openrouter_model': 'deepseek/deepseek-r1-0528:free',  # Modèle gratuit
+            'openrouter_model': 'deepseek/deepseek-chat-v3-0324:free',  # Nouveau modèle gratuit
             'min_article_words': 600,  # Objectifs plus réalistes
             'max_article_words': 1500,
             'target_word_count': 400,  # Cible réaliste pour l'API

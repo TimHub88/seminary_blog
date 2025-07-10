@@ -250,7 +250,7 @@ Résumé ({max_words} mots):"""
             
             # Format OpenRouter chat/completions
             payload = {
-                'model': 'deepseek/deepseek-r1-0528:free',
+                'model': 'deepseek/deepseek-chat-v3-0324:free',
                 'messages': [
                     {
                         'role': 'user',
