@@ -38,7 +38,7 @@ logger = logging.getLogger(__name__)
 class ArticleGenerator:
     """Générateur d'articles complet avec pipeline 4-pass."""
     
-    def __init__(self, openrouter_api_key: str, unsplash_access_key: Optional[str] = None, unsplash_secret_key: Optional[str] = None):
+    def __init__(self, openrouter_api_key: Optional[str] = None, unsplash_access_key: Optional[str] = None, unsplash_secret_key: Optional[str] = None):
         """
         Initialise le générateur d'articles.
         
@@ -47,6 +47,9 @@ class ArticleGenerator:
             unsplash_access_key: Clé d'accès Unsplash API
             unsplash_secret_key: Clé secrète Unsplash API (pour production)
         """
+        # Récupérer la clé API depuis l'argument ou la variable d'environnement
+        if not openrouter_api_key:
+            openrouter_api_key = os.getenv("OPENROUTER_API_KEY", "")
         self.openrouter_api_key = openrouter_api_key
         self.unsplash_access_key = unsplash_access_key
         self.unsplash_secret_key = unsplash_secret_key
@@ -986,7 +989,7 @@ class ArticleGenerator:
 def main():
     """Point d'entrée principal pour l'exécution standalone."""
     parser = argparse.ArgumentParser(description="Article Generator - Seminary Blog Pipeline")
-    parser.add_argument('--openrouter-api-key', required=True, help='Clé API OpenRouter')
+    parser.add_argument('--openrouter-api-key', help='Clé API OpenRouter (sinon utiliser la variable d\'environnement OPENROUTER_API_KEY)')
     parser.add_argument('--unsplash-access-key', help='Clé d\'accès Unsplash API (optionnel)')
     parser.add_argument('--unsplash-secret-key', help='Clé secrète Unsplash API (pour production, optionnel)')
     parser.add_argument('--update-context', action='store_true', help='Mettre à jour le contexte uniquement')
@@ -994,17 +997,22 @@ def main():
     
     args = parser.parse_args()
     
+    # Déterminer la clé à utiliser
+    api_key_cli = args.openrouter_api_key
+    api_key_env = os.getenv("OPENROUTER_API_KEY")
+    api_key_final = api_key_cli if api_key_cli else api_key_env
+
     if args.update_context:
         # Mise à jour du contexte uniquement
         context_manager = ContextManager()
-        context_manager.update_context(args.openrouter_api_key)
+        context_manager.update_context(api_key_final or "")
         print("✅ Contexte mis à jour")
         return
     
     if args.dry_run:
         print("🧪 MODE TEST - Pas de génération réelle")
         # Test de connexion API
-        generator = ArticleGenerator(args.openrouter_api_key, args.unsplash_access_key, args.unsplash_secret_key)
+        generator = ArticleGenerator(api_key_final, args.unsplash_access_key, args.unsplash_secret_key)
         test_response = generator.call_openrouter_api("Test de connexion", max_tokens=10)
         if test_response:
             print("✅ Connexion API réussie")
@@ -1013,7 +1021,7 @@ def main():
         return
     
     # Génération normale
-    generator = ArticleGenerator(args.openrouter_api_key, args.unsplash_access_key, args.unsplash_secret_key)
+    generator = ArticleGenerator(api_key_final, args.unsplash_access_key, args.unsplash_secret_key)
     
     result_path = generator.generate_full_article()
     
