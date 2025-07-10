@@ -22,6 +22,7 @@ from pathlib import Path
 import re
 from jinja2 import Template
 import argparse
+from bs4 import BeautifulSoup  # Validation DOM robuste
 
 # Imports des modules Seminary
 from context_manager import ContextManager
@@ -597,7 +598,7 @@ class ArticleGenerator:
     
     def _integrate_visual_elements(self, html: str, article_data: Dict) -> Dict:
         """Intègre images Unsplash et illustrations CSS/SVG dans l'article."""
-        from bs4 import BeautifulSoup
+        # from bs4 import BeautifulSoup # This import is now at the top
         
         soup = BeautifulSoup(html, 'html.parser')
         visual_elements_added = []
@@ -711,10 +712,39 @@ class ArticleGenerator:
             'elements_added': visual_elements_added,
             'summary': f"{len(visual_elements_added)} éléments visuels ajoutés"
         }
+
+    # =====================================================
+    # Validation HTML par analyse DOM
+    # =====================================================
+    @staticmethod
+    def _is_valid_html(html: str) -> bool:
+        """Valide la structure HTML minimale via BeautifulSoup.
+
+        Exigences : balises <html>, <head>, <body> et au moins un <h1>.
+        Retourne True si toutes présentes, False sinon.
+        """
+        if not html or len(html.strip()) < 100:
+            return False
+
+        try:
+            soup = BeautifulSoup(html, 'html.parser')
+            essentials = {
+                'html': bool(soup.html),
+                'head': bool(soup.head),
+                'body': bool(soup.body),
+                'h1': bool(soup.find('h1'))
+            }
+            missing = [k for k, ok in essentials.items() if not ok]
+            if missing:
+                logger.warning(f"Balises manquantes DOM: {missing}")
+            return all(essentials.values())
+        except Exception as e:
+            logger.error(f"Erreur validation HTML DOM: {e}")
+            return False
     
     def _inject_featured_image(self, html: str, image_path: str, image_info: Dict) -> str:
         """Injecte une image mise en avant dans l'article (méthode legacy)."""
-        from bs4 import BeautifulSoup
+        # from bs4 import BeautifulSoup # This import is now at the top
         
         soup = BeautifulSoup(html, 'html.parser')
         
@@ -877,15 +907,31 @@ class ArticleGenerator:
                 logger.error("   Aucun article ne sera créé pour éviter les fichiers vides")
                 return None
             
-            # Vérifier la présence de balises HTML essentielles
-            required_tags = ['<html>', '<head>', '<title>', '<body>', '<h1>']
-            missing_tags = [tag for tag in required_tags if tag not in final_html]
-            if missing_tags:
-                logger.error(f"❌ ÉCHEC CRITIQUE: Balises HTML manquantes: {missing_tags}")
-                logger.error("   Aucun article ne sera créé pour éviter les fichiers vides")
-                return None
-            
-            logger.info("✅ HTML final validé - Structure complète détectée")
+            # Validation DOM robuste
+            if not self._is_valid_html(final_html):
+                logger.warning("Structure HTML incomplète, tentative d'auto-wrap avec le template...")
+
+                # Ré-encapsuler le contenu actuel dans le template global
+                auto_vars = {
+                    'article_title': improved_article['metadata'].get('title', 'Article Seminary'),
+                    'meta_description': improved_article['metadata'].get('description', ''),
+                    'article_content': final_html,
+                    'publish_date': datetime.now().strftime('%d/%m/%Y'),
+                    'reading_time': max(1, improved_article.get('word_count', 400) // 200),
+                    'filename': self.generate_filename(improved_article['metadata']),
+                    'header_html': '',
+                    'footer_html': '',
+                    'article_subtitle': ''
+                }
+                wrapped_html = self.article_template.render(**auto_vars)
+
+                if not self._is_valid_html(wrapped_html):
+                    logger.error("❌ ÉCHEC CRITIQUE: HTML invalide même après auto-wrap")
+                    return None
+                logger.info("✅ HTML auto-wrap réussi et validé")
+                final_html = wrapped_html
+            else:
+                logger.info("✅ HTML final validé via analyse DOM")
             
             # Sauvegarder l'article
             file_path = self.save_article(final_result)
